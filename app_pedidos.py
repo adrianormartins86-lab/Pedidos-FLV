@@ -1,0 +1,709 @@
+import streamlit as st
+import pandas as pd
+import io
+
+# ─────────────────────────────────────────────
+# CONFIGURAÇÃO DA PÁGINA
+# ─────────────────────────────────────────────
+st.set_page_config(
+    page_title="Gestão de Pedidos - FLV Normal",
+    page_icon="🛒",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# ─────────────────────────────────────────────
+# CSS GLOBAL
+# ─────────────────────────────────────────────
+st.markdown("""
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;700&display=swap');
+
+/* ── Variáveis de cor ── */
+:root {
+    --bg-main:        #0d1117;
+    --bg-card:        #161b22;
+    --bg-sidebar:     #0d1117;
+    --green-dark:     #1a3a2a;
+    --green-mid:      #1f4d35;
+    --green-accent:   #2ea043;
+    --green-bright:   #3fb950;
+    --green-glow:     rgba(46,160,67,.25);
+    --text-primary:   #e6edf3;
+    --text-muted:     #7d8590;
+    --text-header:    #cae8cb;
+    --border:         #21262d;
+    --border-active:  #2ea043;
+    --row-hover:      rgba(46,160,67,.08);
+    --row-selected:   rgba(46,160,67,.18);
+}
+
+/* ── Reset global ── */
+.stApp, .main { background-color: var(--bg-main) !important; color: var(--text-primary) !important; }
+html, body, [class*="css"] { font-family: 'IBM Plex Sans', sans-serif !important; }
+section[data-testid="stSidebar"] { background-color: var(--bg-sidebar) !important; border-right: 1px solid var(--border); }
+
+/* ── Sidebar texto ── */
+section[data-testid="stSidebar"] * { color: var(--text-primary) !important; }
+section[data-testid="stSidebar"] .stRadio label { font-size: 14px; }
+
+/* ── Botões primários ── */
+.stButton > button[kind="primary"] {
+    background: linear-gradient(135deg, var(--green-mid) 0%, var(--green-accent) 100%) !important;
+    color: #fff !important;
+    border: 1px solid var(--green-accent) !important;
+    border-radius: 8px !important;
+    font-weight: 700 !important;
+    letter-spacing: .3px;
+    transition: all .2s ease !important;
+}
+.stButton > button[kind="primary"]:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 4px 18px var(--green-glow) !important;
+    border-color: var(--green-bright) !important;
+}
+
+/* ── Botões secundários ── */
+.stButton > button {
+    background: var(--bg-card) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 8px !important;
+    transition: all .2s ease !important;
+}
+.stButton > button:hover {
+    border-color: var(--green-accent) !important;
+    color: var(--green-bright) !important;
+    transform: translateY(-1px) !important;
+}
+
+/* ── Inputs / Selects ── */
+.stTextInput input, .stSelectbox > div > div {
+    background-color: var(--bg-card) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 8px !important;
+    color: var(--text-primary) !important;
+}
+.stTextInput input:focus, .stSelectbox > div > div:focus-within {
+    border-color: var(--green-accent) !important;
+    box-shadow: 0 0 0 3px var(--green-glow) !important;
+}
+
+/* ── Data Editor: cabeçalho verde escuro ── */
+[data-testid="stDataEditor"] [data-testid="glideDataEditor"] .gdg-header-cell,
+[data-testid="stDataEditor"] .dvn-stack .gdg-header {
+    background-color: var(--green-dark) !important;
+    color: var(--text-header) !important;
+}
+
+/* Wrapper da tabela */
+[data-testid="stDataEditor"] {
+    border-radius: 10px !important;
+    overflow: hidden;
+    border: 1px solid var(--green-mid) !important;
+    box-shadow: 0 4px 20px rgba(0,0,0,.4);
+}
+
+/* ── Célula selecionada ── */
+[data-testid="stDataEditor"] .gdg-cell.gdg-selected,
+[data-testid="stDataEditor"] .gdg-cell[data-state="focused"],
+[data-testid="stDataEditor"] .gdg-cell[aria-selected="true"] {
+    background-color: var(--row-selected) !important;
+    outline: 2px solid var(--green-accent) !important;
+    outline-offset: -2px;
+}
+
+/* Linha hover */
+[data-testid="stDataEditor"] .gdg-row:hover .gdg-cell {
+    background-color: var(--row-hover) !important;
+}
+
+/* ── Containers / Cards ── */
+div[data-testid="stVerticalBlockBorderWrapper"] {
+    background-color: var(--bg-card) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 12px !important;
+    transition: box-shadow .25s ease, border-color .25s ease;
+}
+div[data-testid="stVerticalBlockBorderWrapper"]:hover {
+    border-color: var(--green-mid) !important;
+    box-shadow: 0 6px 24px rgba(0,0,0,.35) !important;
+}
+
+/* ── Métricas ── */
+[data-testid="stMetric"] {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 16px;
+}
+[data-testid="stMetricValue"] { color: var(--green-bright) !important; font-weight: 700; }
+[data-testid="stMetricLabel"] { color: var(--text-muted) !important; }
+
+/* ── Ocultar sidebar para lojas ── */
+.sidebar-hidden section[data-testid="stSidebar"],
+.sidebar-hidden [data-testid="collapsedControl"] {
+    display: none !important;
+}
+.sidebar-hidden .main .block-container {
+    max-width: 100% !important;
+    padding-left: 2rem !important;
+    padding-right: 2rem !important;
+}
+
+/* ── Barra de topo para lojas ── */
+.topbar-loja {
+    background: linear-gradient(90deg, var(--green-dark) 0%, #0d2018 100%);
+    border: 1px solid var(--green-mid);
+    border-radius: 10px;
+    padding: 10px 18px;
+    margin-bottom: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.topbar-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.topbar-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-header);
+}
+.topbar-sub {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# ─────────────────────────────────────────────
+# CONSTANTES
+# ─────────────────────────────────────────────
+LOJAS = ["Loja 01", "Loja 02", "Loja 03", "Loja 04", "Loja 05", "Loja 06", "Loja 07", "Loja 08"]
+
+# ─────────────────────────────────────────────
+# SISTEMA DE LOGIN
+# ─────────────────────────────────────────────
+if 'usuario_logado' not in st.session_state:
+    st.session_state['usuario_logado'] = None
+
+if st.session_state['usuario_logado'] is None:
+    st.write("<br><br>", unsafe_allow_html=True)
+    _, col2, _ = st.columns([1, 1.4, 1])
+
+    with col2:
+        with st.container(border=True):
+            h1, h2 = st.columns([4, 1])
+            with h1:
+                st.markdown("""
+                    <h2 style='margin-bottom:0'>Portal de Pedidos</h2>
+                    <p style='color:#7d8590;font-size:14px;margin-top:4px'>FLV Normal — Molicenter</p>
+                """, unsafe_allow_html=True)
+            with h2:
+                st.write("")
+                try:
+                    st.image("passaro_logo.png", width=60)
+                except Exception:
+                    st.markdown("🐦", unsafe_allow_html=True)
+
+            st.divider()
+
+            usuarios_permitidos = ["Selecione..."] + ["Administrador"] + LOJAS
+            usuario_selecionado = st.selectbox("👤 Usuário de acesso:", usuarios_permitidos)
+            senha_digitada = st.text_input("🔑 Senha de acesso:", type="password")
+
+            st.write("<br>", unsafe_allow_html=True)
+
+            if st.button("Entrar no Sistema", type="primary", use_container_width=True):
+                if usuario_selecionado == "Selecione...":
+                    st.error("⚠️ Por favor, selecione um usuário.")
+                elif usuario_selecionado == "Administrador" and senha_digitada == "moli0000":
+                    st.session_state['usuario_logado'] = usuario_selecionado
+                    st.rerun()
+                elif usuario_selecionado in LOJAS and senha_digitada == "moli1234":
+                    st.session_state['usuario_logado'] = usuario_selecionado
+                    st.rerun()
+                elif senha_digitada:
+                    st.error("⚠️ Senha incorreta. Tente novamente.")
+
+            st.markdown('<p style="font-size: 11px; color: #7d8590; text-align: center; margin-top: 10px;">🔒 Acesso restrito — Molicenter © 2026</p>', unsafe_allow_html=True)
+    st.stop()
+
+# ─────────────────────────────────────────────
+# ESTADO E DADOS
+# ─────────────────────────────────────────────
+usuario_atual = st.session_state['usuario_logado']
+acesso_total  = usuario_atual == "Administrador"
+
+if not acesso_total:
+    st.markdown("""
+    <script>
+        document.body.classList.add('sidebar-hidden');
+        const root = window.parent.document.querySelector('.stApp');
+        if (root) root.classList.add('sidebar-hidden');
+    </script>
+    <style>
+        section[data-testid="stSidebar"] { display: none !important; }
+        [data-testid="collapsedControl"]  { display: none !important; }
+        .main .block-container {
+            max-width: 100% !important;
+            padding-left: 2.5rem !important;
+            padding-right: 2.5rem !important;
+        }
+    </style>
+    """, unsafe_allow_html=True)
+
+limpar_cache = False
+if 'df_pedidos' in st.session_state:
+    if any(l not in st.session_state['df_pedidos'].columns for l in LOJAS):
+        limpar_cache = True
+
+if limpar_cache:
+    for k in ('df_pedidos', 'df_produtos'):
+        st.session_state.pop(k, None)
+
+if 'df_produtos' not in st.session_state:
+    # BASE FLV NORMAL COMPLETA
+    produtos_iniciais = [
+        {"Código": 1571, "Descrição": "Abacate Cx 20 Kg", "Tipo": "Box"},
+        {"Código": 2614, "Descrição": "Abacaxi Doce Mel Cx c/7", "Tipo": "Box"},
+        {"Código": 95, "Descrição": "Abacaxi Hawai Un", "Tipo": "Pedra"},
+        {"Código": 94, "Descrição": "Abacaxi Perola Un", "Tipo": "Box"},
+        {"Código": 232, "Descrição": "Abobora Cabotia 20 Kg", "Tipo": "Box"},
+        {"Código": 235, "Descrição": "Abobora Gigante Doce kg", "Tipo": "Box"},
+        {"Código": 236, "Descrição": "Abobora Italia Bdj", "Tipo": "Pedra"},
+        {"Código": 45, "Descrição": "Abobora Italia Cx 20 Kg", "Tipo": "Pedra"},
+        {"Código": 237, "Descrição": "Abobora Menina Bdj", "Tipo": "Pedra"},
+        {"Código": 56, "Descrição": "Abobora Menina Cx 20Kg", "Tipo": "Pedra"},
+        {"Código": 238, "Descrição": "Abobora Moranga Saco 20kg", "Tipo": "Box"},
+        {"Código": 240, "Descrição": "Abobora Paulista Verde cx 22Kg", "Tipo": "Pedra"},
+        {"Código": 85, "Descrição": "Acelga Cx c/8", "Tipo": "Pedra"},
+        {"Código": 1746, "Descrição": "Alface Americana unid", "Tipo": "Pedra"},
+        {"Código": 0, "Descrição": "Alho Nacional Cx 10Kg", "Tipo": "Box"},
+        {"Código": 320, "Descrição": "Alho Poro dz", "Tipo": "Box"},
+        {"Código": 894, "Descrição": "Ameixa Importada Cx 9Kg", "Tipo": "Box"},
+        {"Código": 0, "Descrição": "Ameixa Nacional", "Tipo": "Box"},
+        {"Código": 504, "Descrição": "Amendoim sc 10Kg", "Tipo": "Box"},
+        {"Código": 113, "Descrição": "Aspargos", "Tipo": "Box"},
+        {"Código": 896, "Descrição": "Atemoia Cx 4Kg", "Tipo": "Box"},
+        {"Código": 897, "Descrição": "Avocado Cx 10Kg", "Tipo": "Box"},
+        {"Código": 2567, "Descrição": "Banana Maça Cx", "Tipo": "Pedra"},
+        {"Código": 2568, "Descrição": "Banana Nanica Cx", "Tipo": "Pedra"},
+        {"Código": 2569, "Descrição": "Banana Prata Cx", "Tipo": "Pedra"},
+        {"Código": 98, "Descrição": "Banana Terra Cx 20Kg", "Tipo": "Box"},
+        {"Código": 551, "Descrição": "Batata Asterix Saq 25Kg", "Tipo": "Pedra"},
+        {"Código": 73, "Descrição": "Batata Doce Branca Cx 22Kg", "Tipo": "Pedra"},
+        {"Código": 60, "Descrição": "Batata Doce Cx 22Kg", "Tipo": "Pedra"},
+        {"Código": 508, "Descrição": "Batata kg Saq 25Kg", "Tipo": "Pedra"},
+        {"Código": 26, "Descrição": "Batata Yacom Kg", "Tipo": "Box"},
+        {"Código": 61, "Descrição": "Berinjela Cx 13Kg", "Tipo": "Pedra"},
+        {"Código": 2732, "Descrição": "Berinjela Japonesa Bdja", "Tipo": "Pedra"},
+        {"Código": 62, "Descrição": "Berinjela Japonesa Cx 13Kg", "Tipo": "Pedra"},
+        {"Código": 256, "Descrição": "Beterraba Cx 21kg", "Tipo": "Pedra"},
+        {"Código": 64, "Descrição": "Brocolis Chines BDJ", "Tipo": "Box"},
+        {"Código": 707, "Descrição": "Cabotia 300g Bjda Descascada", "Tipo": "Pedra"},
+        {"Código": 28, "Descrição": "Caju bandeija cx c/4", "Tipo": "Box"},
+        {"Código": 0, "Descrição": "Caqui Fuyu cx 20Kg", "Tipo": "Box"},
+        {"Código": 0, "Descrição": "Caqui Kioto / Chocolate cx 20Kg", "Tipo": "Box"},
+        {"Código": 264, "Descrição": "Caqui Rama Forte Cx 5Kg", "Tipo": "Box"},
+        {"Código": 69, "Descrição": "Cara Cx 22Kg", "Tipo": "Pedra"},
+        {"Código": 127, "Descrição": "Carambola bandeija cx c/4", "Tipo": "Box"},
+        {"Código": 74, "Descrição": "Caxi Cx 20Kg", "Tipo": "Pedra"},
+        {"Código": 2730, "Descrição": "Cebola Branca Bdja", "Tipo": "Pedra"},
+        {"Código": 900, "Descrição": "Cebola cx 3 Saco 20Kg", "Tipo": "Box"},
+        {"Código": 43, "Descrição": "Cebola Roxa Saco 20Kg", "Tipo": "Box"},
+        {"Código": 17, "Descrição": "Cenoura Baby un", "Tipo": "Box"},
+        {"Código": 267, "Descrição": "Cenoura Cx 21kg", "Tipo": "Pedra"},
+        {"Código": 19, "Descrição": "Champignon Paris 250G un", "Tipo": "Box"},
+        {"Código": 902, "Descrição": "Chuchu Cx 20Kg", "Tipo": "Box"},
+        {"Código": 1555, "Descrição": "Cidra Ralada Pré Cozid Un", "Tipo": "Box"},
+        {"Código": 21, "Descrição": "Coco Seco Cx 18Kg", "Tipo": "Box"},
+        {"Código": 1700, "Descrição": "Coco Verde saco c/10", "Tipo": "Box"},
+        {"Código": 87, "Descrição": "Couve Flor Bdj", "Tipo": "Box"},
+        {"Código": 86, "Descrição": "Couve Flor dz", "Tipo": "Pedra"},
+        {"Código": 108, "Descrição": "Ervilha em Grãos Bdja", "Tipo": "Pedra"},
+        {"Código": 109, "Descrição": "Ervilha Horta Torta Bdj", "Tipo": "Pedra"},
+        {"Código": 279, "Descrição": "Figo Pre Cozido un", "Tipo": "Box"},
+        {"Código": 128, "Descrição": "Figo Roxo bandeija cx c/3un", "Tipo": "Box"},
+        {"Código": 712, "Descrição": "Gengibre Cx 12Kg", "Tipo": "Box"},
+        {"Código": 281, "Descrição": "Gobo Un", "Tipo": "Box"},
+        {"Código": 59, "Descrição": "Goiaba Cx 20Kg", "Tipo": "Box"},
+        {"Código": 1662, "Descrição": "Inhame Cx 22kg", "Tipo": "Pedra"},
+        {"Código": 42, "Descrição": "Jilo Bdj", "Tipo": "Pedra"},
+        {"Código": 41, "Descrição": "Jilo Cx 15Kg", "Tipo": "Pedra"},
+        {"Código": 112, "Descrição": "Kiwi 500g Bdj", "Tipo": "Box"},
+        {"Código": 904, "Descrição": "Kiwi Importado Cx t23 cx 9Kg", "Tipo": "Box"},
+        {"Código": 1651, "Descrição": "Laranja Bahia Cx 18Kg", "Tipo": "Box"},
+        {"Código": 1599, "Descrição": "Laranja Bahia importada Cx 15Kg", "Tipo": "Box"},
+        {"Código": 1307, "Descrição": "Laranja Lima Cx 18Kg", "Tipo": "Box"},
+        {"Código": 0, "Descrição": "Laranja Lima PC 1,5KG", "Tipo": "Pedra"},
+        {"Código": 1516, "Descrição": "Laranja P/ Suco Cx 20Kg", "Tipo": "Pedra"},
+        {"Código": 53, "Descrição": "Laranja Pera Cx 20Kg", "Tipo": "Pedra"},
+        {"Código": 0, "Descrição": "Laranja Pera PC 3 KG", "Tipo": "Pedra"},
+        {"Código": 288, "Descrição": "Laranja Pre Cozida un", "Tipo": "Box"},
+        {"Código": 13, "Descrição": "Lima Da Persia Cx 10Kg", "Tipo": "Box"},
+        {"Código": 44, "Descrição": "Limao Cx 22kg 22Kg", "Tipo": "Box"},
+        {"Código": 581, "Descrição": "Limão Rosa Bdja", "Tipo": "Pedra"},
+        {"Código": 91, "Descrição": "Limao Rosa Cx 20Kg", "Tipo": "Pedra"},
+        {"Código": 522, "Descrição": "Limao Siciliano Cx 15Kg", "Tipo": "Box"},
+        {"Código": 291, "Descrição": "Maça Argentina Cx 18Kg", "Tipo": "Box"},
+        {"Código": 0, "Descrição": "Maça Fuji Cx 18Kg", "Tipo": "Box"},
+        {"Código": 0, "Descrição": "Maça Gala Cx 18Kg", "Tipo": "Box"},
+        {"Código": 1697, "Descrição": "Maça Gransmith Cx 1/2 9Kg", "Tipo": "Box"},
+        {"Código": 1652, "Descrição": "Maça Pacote 1kg diversos cx 18un", "Tipo": "Box"},
+        {"Código": 2052, "Descrição": "Maça Pink Lady Cx 18Kg", "Tipo": "Box"},
+        {"Código": 106, "Descrição": "Mamao Formosa Cx 10Kg", "Tipo": "Box"},
+        {"Código": 3, "Descrição": "Mamao Papaya Cx 10kg 15un", "Tipo": "Box"},
+        {"Código": 75, "Descrição": "Mandioca Desc 1Kg", "Tipo": "Pedra"},
+        {"Código": 78, "Descrição": "Mandioca Salsa Bdj", "Tipo": "Pedra"},
+        {"Código": 76, "Descrição": "Mandioca Salsa Cx 10Kg", "Tipo": "Pedra"},
+        {"Código": 406, "Descrição": "Manga Espada 6Kg", "Tipo": "Box"},
+        {"Código": 6, "Descrição": "Manga Palmer Cx 18Kg", "Tipo": "Box"},
+        {"Código": 130, "Descrição": "Manga Rosa 18Kg", "Tipo": "Box"},
+        {"Código": 908, "Descrição": "Manga Tomy Cx 19kg", "Tipo": "Box"},
+        {"Código": 92, "Descrição": "Maracuja Azedo Cx 10Kg", "Tipo": "Box"},
+        {"Código": 1646, "Descrição": "Maracuja Doce Cx Plastica 10Kg", "Tipo": "Box"},
+        {"Código": 518, "Descrição": "Maxi Pecan 250G un", "Tipo": "Box"},
+        {"Código": 546, "Descrição": "Maxixe Bandeja 300g", "Tipo": "Pedra"},
+        {"Código": 3, "Descrição": "Melancia Amarela", "Tipo": "Pedra"},
+        {"Código": 673, "Descrição": "Melancia Baby Cx 14Kg", "Tipo": "Box"},
+        {"Código": 2, "Descrição": "Melancia Favo de Mel", "Tipo": "Pedra"},
+        {"Código": 1, "Descrição": "Melancia Un", "Tipo": "Pedra"},
+        {"Código": 0, "Descrição": "Melão Amarelo Gaia Cx 13kg", "Tipo": "Box"},
+        {"Código": 1409, "Descrição": "Melão Bebezinho", "Tipo": "Box"},
+        {"Código": 198, "Descrição": "Melao Cantalupe Cx 10Kg", "Tipo": "Box"},
+        {"Código": 412, "Descrição": "Melao Cepi Amarelo Cx 10Kg", "Tipo": "Box"},
+        {"Código": 200, "Descrição": "Melao Dino Cx 10Kg", "Tipo": "Box"},
+        {"Código": 202, "Descrição": "Melao Galia Cx 10Kg", "Tipo": "Box"},
+        {"Código": 1407, "Descrição": "Melao Orange Cx 6Kg", "Tipo": "Box"},
+        {"Código": 424, "Descrição": "Melao Rei Cx 10Kg", "Tipo": "Box"},
+        {"Código": 206, "Descrição": "Melao Rei Sapo Cx 10Kg", "Tipo": "Box"},
+        {"Código": 915, "Descrição": "Melao Sapo Cx 13Kg", "Tipo": "Box"},
+        {"Código": 477, "Descrição": "Mexerica cx 20kg", "Tipo": "Box"},
+        {"Código": 72, "Descrição": "Milho Verde Bdj", "Tipo": "Pedra"},
+        {"Código": 20, "Descrição": "Mirtilo cx c/12", "Tipo": "Box"},
+        {"Código": 58, "Descrição": "Moranguinho Bdj cx c/4", "Tipo": "Pedra"},
+        {"Código": 536, "Descrição": "Moricote Ole cx 18Kg", "Tipo": "Box"},
+        {"Código": 209, "Descrição": "Moyashi un", "Tipo": "Box"},
+        {"Código": 79, "Descrição": "Nabo maco c/6", "Tipo": "Pedra"},
+        {"Código": 916, "Descrição": "Nectarina importada 9Kg", "Tipo": "Box"},
+        {"Código": 22, "Descrição": "Nespera Bdj c/4", "Tipo": "Box"},
+        {"Código": 57, "Descrição": "Pepino Caipira Cx 20Kg", "Tipo": "Pedra"},
+        {"Código": 46, "Descrição": "Pepino Fuchinari Cx 20Kg", "Tipo": "Pedra"},
+        {"Código": 2009, "Descrição": "Pera Argentina cx 18Kg", "Tipo": "Box"},
+        {"Código": 118, "Descrição": "Pera asiatica ou Hossui cx 9Kg", "Tipo": "Box"},
+        {"Código": 119, "Descrição": "Pera Erconini 1kg bdj cx c/10", "Tipo": "Box"},
+        {"Código": 1431, "Descrição": "Pera Nacional cx 20Kg", "Tipo": "Box"},
+        {"Código": 1600, "Descrição": "Pera Portuguesa bdj", "Tipo": "Box"},
+        {"Código": 121, "Descrição": "Pera Portuguesa Cx 9Kg", "Tipo": "Box"},
+        {"Código": 4, "Descrição": "Pera Red Cx 18Kg", "Tipo": "Box"},
+        {"Código": 891, "Descrição": "Pessego importado cx 9Kg", "Tipo": "Box"},
+        {"Código": 537, "Descrição": "Physalis cx c/8", "Tipo": "Box"},
+        {"Código": 52, "Descrição": "Pimenta Americana Cx 10Kg", "Tipo": "Pedra"},
+        {"Código": 80, "Descrição": "Pimenta Biquinho Bdj", "Tipo": "Pedra"},
+        {"Código": 83, "Descrição": "Pimenta Gode Bdj", "Tipo": "Pedra"},
+        {"Código": 540, "Descrição": "Pimenta Vermelha Bdj", "Tipo": "Pedra"},
+        {"Código": 47, "Descrição": "Pimentao Amarelo Cx 10Kg", "Tipo": "Pedra"},
+        {"Código": 949, "Descrição": "Pimentão Misto Bdj", "Tipo": "Pedra"},
+        {"Código": 49, "Descrição": "Pimentao Verde Cx 10Kg", "Tipo": "Pedra"},
+        {"Código": 48, "Descrição": "Pimentao Vermelho Cx 10Kg", "Tipo": "Pedra"},
+        {"Código": 138, "Descrição": "Pinha cx 4,5kg", "Tipo": "Box"},
+        {"Código": 498, "Descrição": "Pinhao saq 10Kg", "Tipo": "Box"},
+        {"Código": 139, "Descrição": "Pitaia Cx 10kg", "Tipo": "Box"},
+        {"Código": 1486, "Descrição": "Poncan cx 20Kg", "Tipo": "Box"},
+        {"Código": 40, "Descrição": "Quiabo Bdj", "Tipo": "Pedra"},
+        {"Código": 110, "Descrição": "Rabanete Bdj", "Tipo": "Pedra"},
+        {"Código": 2886, "Descrição": "Rabanete Maco Dz 12un", "Tipo": "Pedra"},
+        {"Código": 88, "Descrição": "Repolho dz 12un", "Tipo": "Pedra"},
+        {"Código": 84, "Descrição": "Repolho Manteiga Bj dz 12un", "Tipo": "Pedra"},
+        {"Código": 140, "Descrição": "Repolho Roxo Dz 12un", "Tipo": "Pedra"},
+        {"Código": 16, "Descrição": "Roma cx 4,5kg", "Tipo": "Box"},
+        {"Código": 31, "Descrição": "Salsao un", "Tipo": "Box"},
+        {"Código": 32, "Descrição": "Shimeji Branco un", "Tipo": "Box"},
+        {"Código": 679, "Descrição": "Shimeji Preto un", "Tipo": "Box"},
+        {"Código": 33, "Descrição": "Shitake un", "Tipo": "Box"},
+        {"Código": 10, "Descrição": "Tamara Bandeija Palito Un", "Tipo": "Box"},
+        {"Código": 23, "Descrição": "Tamarindo bdj cx c/4", "Tipo": "Box"},
+        {"Código": 364, "Descrição": "Tofu un", "Tipo": "Box"},
+        {"Código": 39, "Descrição": "Tomate Saladete Cx 22Kg", "Tipo": "Pedra"},
+        {"Código": 51, "Descrição": "Tomate Sweet Grape un", "Tipo": "Box"},
+        {"Código": 538, "Descrição": "Tomatinho Bdj Naranti", "Tipo": "Pedra"},
+        {"Código": 147, "Descrição": "Tomatinho cocktail holandez cx 6Kg", "Tipo": "Box"},
+        {"Código": 100, "Descrição": "Uva Niagara Bdja cx c/10", "Tipo": "Box"},
+        {"Código": 0, "Descrição": "Uva Preta 500g Bdja cx c/10", "Tipo": "Box"},
+        {"Código": 0, "Descrição": "Uva Preta Benetaka Bdja cx c/10", "Tipo": "Box"},
+        {"Código": 0, "Descrição": "Uva Verde 500g Bdja cx c/10", "Tipo": "Box"},
+        {"Código": 0, "Descrição": "Uva Vermelha 500g Bdja cx c/10", "Tipo": "Box"},
+        {"Código": 68, "Descrição": "Vagem Bdj", "Tipo": "Pedra"},
+        {"Código": 67, "Descrição": "Vagem kg Cx 11kg", "Tipo": "Pedra"}
+    ]
+    df_init = pd.DataFrame(produtos_iniciais)
+    for loja in LOJAS:
+        df_init[loja] = True
+    st.session_state['df_produtos'] = df_init
+
+if 'df_pedidos' not in st.session_state:
+    df_p = pd.DataFrame(columns=["Código"] + LOJAS)
+    df_p["Código"] = st.session_state['df_produtos']["Código"]
+    df_p[LOJAS] = 0
+    st.session_state['df_pedidos'] = df_p
+
+def sincronizar_tabelas():
+    df_prod = st.session_state['df_produtos']
+    df_ped  = st.session_state['df_pedidos']
+    df_ped  = df_ped[df_ped["Código"].isin(df_prod["Código"])]
+    novos   = df_prod[~df_prod["Código"].isin(df_ped["Código"])]["Código"]
+    if not novos.empty:
+        df_n = pd.DataFrame({"Código": novos})
+        df_n[LOJAS] = 0
+        df_ped = pd.concat([df_ped, df_n], ignore_index=True)
+    st.session_state['df_pedidos'] = df_ped
+
+sincronizar_tabelas()
+
+# ─────────────────────────────────────────────
+# SIDEBAR
+# ─────────────────────────────────────────────
+with st.sidebar:
+    try:
+        st.image("passaro_logo.png", width=72)
+    except Exception:
+        st.markdown("🐦")
+
+    st.markdown(f"### Olá, **{usuario_atual}**")
+    st.caption("Sistema de Pedidos Integrado")
+    st.divider()
+
+    if acesso_total:
+        perfil_navegacao = st.radio("📍 Navegação:", [
+            "Separação e Fechamento",
+            "Visão das Lojas",
+            "Catálogo de Produtos"
+        ])
+    else:
+        perfil_navegacao = "Visão das Lojas"
+
+    st.divider()
+
+    total_preenchidos = (st.session_state['df_pedidos'][LOJAS] > 0).any(axis=1).sum()
+    st.metric("Itens c/ pedido", total_preenchidos, help="Itens que têm ao menos 1 quantidade preenchida")
+
+    st.divider()
+    if st.button("🚪 Sair / Logout", use_container_width=True):
+        st.session_state['usuario_logado'] = None
+        st.rerun()
+
+# ─────────────────────────────────────────────
+# ROTA 1: SEPARAÇÃO E FECHAMENTO
+# ─────────────────────────────────────────────
+if perfil_navegacao == "Separação e Fechamento":
+
+    st.markdown("""
+    <div class="page-header" style="background: linear-gradient(90deg, var(--green-dark) 0%, #0d2018 100%); padding: 14px 20px; border-radius: 10px; margin-bottom: 22px;">
+        <span style="font-size: 26px; margin-right: 12px;">📊</span>
+        <div style="display: inline-block; vertical-align: top;">
+            <div style="font-size: 20px; font-weight: 700; color: var(--text-header);">Separação e Fechamento</div>
+            <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Consolidado geral — edite quantidades e filtre por setor</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    with st.container(border=True):
+        
+        # Filtro de Setor exclusivo para o Administrador
+        filtro_setor = st.radio("🔍 Filtrar Exibição por Setor:", ["Todos", "Box", "Pedra"], horizontal=True)
+        st.write("<br>", unsafe_allow_html=True)
+
+        df_base  = st.session_state['df_produtos'][["Código","Descrição","Tipo"]]
+        df_final = pd.merge(df_base, st.session_state['df_pedidos'], on="Código")
+        df_final["TOTAL GERAL"] = df_final[LOJAS].sum(axis=1)
+
+        # Aplica o filtro selecionado
+        if filtro_setor != "Todos":
+            df_final = df_final[df_final["Tipo"] == filtro_setor].reset_index(drop=True)
+
+        col_cfg = {
+            "Código":      st.column_config.NumberColumn(width=80, format="%d", disabled=True),
+            "Descrição":   st.column_config.TextColumn(disabled=True),
+            "Tipo":        st.column_config.TextColumn("Setor", width=100, disabled=True),
+            "TOTAL GERAL": st.column_config.NumberColumn("TOTAL ▶", width=90, format="%d", disabled=True),
+        }
+        for loja in LOJAS:
+            col_cfg[loja] = st.column_config.NumberColumn(loja, format="%d", min_value=0, step=1)
+
+        df_editado_admin = st.data_editor(
+            df_final, hide_index=True, use_container_width=True,
+            height=580, column_config=col_cfg
+        )
+
+        st.divider()
+        col_salvar, col_csv, col_excel, col_limpa, _ = st.columns([2.5, 1.5, 1.5, 2, 2.5])
+
+        with col_salvar:
+            if st.button("💾 Salvar Alterações", type="primary", use_container_width=True):
+                for _, row in df_editado_admin.iterrows():
+                    mask = st.session_state['df_pedidos']["Código"] == row["Código"]
+                    for loja in LOJAS:
+                        st.session_state['df_pedidos'].loc[mask, loja] = row[loja]
+                st.success("✅ Ajustes salvos com sucesso!")
+                st.rerun()
+
+        with col_csv:
+            csv = df_editado_admin.to_csv(index=False).encode("utf-8")
+            st.download_button(
+                label="⬇️ CSV",
+                data=csv,
+                file_name="separacao_semanal_flv.csv",
+                mime="text/csv",
+                use_container_width=True
+            )
+            
+        with col_excel:
+            buffer = io.BytesIO()
+            with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
+                df_editado_admin.to_excel(writer, index=False, sheet_name='Pedidos FLV')
+            
+            st.download_button(
+                label="⬇️ Excel",
+                data=buffer.getvalue(),
+                file_name="separacao_semanal_flv.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                use_container_width=True
+            )
+
+        with col_limpa:
+            if st.button("🚨 Zerar Pedidos", use_container_width=True):
+                st.session_state['df_pedidos'][LOJAS] = 0
+                st.success("✅ Tabela zerada! Pronto para nova semana.")
+                st.rerun()
+
+# ─────────────────────────────────────────────
+# ROTA 2: VISÃO DAS LOJAS
+# ─────────────────────────────────────────────
+elif perfil_navegacao == "Visão das Lojas":
+
+    if acesso_total:
+        loja_selecionada = st.selectbox("👁️ Visualizar como:", LOJAS)
+    else:
+        loja_selecionada = usuario_atual
+
+    col_info, col_logout = st.columns([8, 2])
+    with col_info:
+        st.markdown(f"""
+        <div class="topbar-loja">
+            <div class="topbar-left">
+                <span style="font-size:22px">📋</span>
+                <div>
+                    <div class="topbar-title">{loja_selecionada} — FLV Normal</div>
+                    <div class="topbar-sub">Preencha as quantidades necessárias e salve o pedido da semana</div>
+                </div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+    with col_logout:
+        st.markdown("<div style='height:14px'></div>", unsafe_allow_html=True)
+        if st.button("🚪 Sair / Logout", use_container_width=True):
+            st.session_state['usuario_logado'] = None
+            st.rerun()
+
+    df_visiveis = st.session_state['df_produtos'][
+        st.session_state['df_produtos'][loja_selecionada] == True
+    ]
+    df_loja = pd.merge(
+        df_visiveis[["Código","Descrição","Tipo"]],
+        st.session_state['df_pedidos'][["Código", loja_selecionada]],
+        on="Código"
+    )
+
+    with st.container(border=True):
+        st.info("💡 **Dica:** Clique em uma célula da coluna **Qtde** para editar. "
+                "A loja tem visão total do mix permitido (Pedra e Box).")
+
+        col_cfg_loja = {
+            "Código":         st.column_config.NumberColumn(width=85, format="%d", disabled=True),
+            "Descrição":      st.column_config.TextColumn(disabled=True),
+            "Tipo":           st.column_config.TextColumn("Setor", width=100, disabled=True),
+            loja_selecionada: st.column_config.NumberColumn(
+                "🛒 Qtde", width=100, min_value=0, step=1,
+                help="Digite a quantidade desejada para esta semana"
+            ),
+        }
+
+        df_editado = st.data_editor(
+            df_loja, column_config=col_cfg_loja,
+            hide_index=True, use_container_width=True, height=520
+        )
+
+        itens_com_pedido = int((df_editado[loja_selecionada] > 0).sum())
+        total_itens      = len(df_editado)
+        total_unidades   = int(df_editado[loja_selecionada].sum())
+        pct              = round(itens_com_pedido / total_itens * 100) if total_itens else 0
+
+        st.divider()
+        m1, m2, m3, _, col_btn = st.columns([1.5, 1.5, 1.5, 2, 3])
+
+        with m1:
+            st.metric("Itens preenchidos", f"{itens_com_pedido} / {total_itens}")
+        with m2:
+            st.metric("Total de unidades", total_unidades)
+        with m3:
+            st.metric("Cobertura", f"{pct}%")
+        with col_btn:
+            st.write("<br>", unsafe_allow_html=True)
+            if st.button("💾 Salvar Pedido da Semana", type="primary", use_container_width=True):
+                for _, row in df_editado.iterrows():
+                    mask = st.session_state['df_pedidos']["Código"] == row["Código"]
+                    st.session_state['df_pedidos'].loc[mask, loja_selecionada] = row[loja_selecionada]
+                st.success(f"✅ Pedido da {loja_selecionada} salvo com sucesso!")
+
+# ─────────────────────────────────────────────
+# ROTA 3: CATÁLOGO DE PRODUTOS
+# ─────────────────────────────────────────────
+elif perfil_navegacao == "Catálogo de Produtos":
+
+    st.markdown("""
+    <div class="page-header" style="background: linear-gradient(90deg, var(--green-dark) 0%, #0d2018 100%); padding: 14px 20px; border-radius: 10px; margin-bottom: 22px;">
+        <span style="font-size: 26px; margin-right: 12px;">🏷️</span>
+        <div style="display: inline-block; vertical-align: top;">
+            <div style="font-size: 20px; font-weight: 700; color: var(--text-header);">Catálogo de Produtos</div>
+            <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Gerencie itens, defina o setor (Box/Pedra) e as permissões por loja</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    with st.container(border=True):
+        st.caption("➕ Adicione produtos na última linha  •  🗑️ Selecione a linha e pressione **Delete** para remover  •  ✅ Checkboxes controlam visibilidade por loja")
+
+        config_catalogo = {
+            "Código":    st.column_config.NumberColumn("Cód. Interno", width=90, required=True, min_value=0, format="%d"),
+            "Descrição": st.column_config.TextColumn("Descrição do Item", width=310, required=True),
+            "Tipo":      st.column_config.SelectboxColumn("Setor", options=["Box", "Pedra"], width=100, required=True),
+        }
+        for loja in LOJAS:
+            config_catalogo[loja] = st.column_config.CheckboxColumn(loja, default=True, width=70)
+
+        df_cat_editado = st.data_editor(
+            st.session_state['df_produtos'],
+            num_rows="dynamic",
+            column_config=config_catalogo,
+            hide_index=True,
+            use_container_width=True,
+            height=580
+        )
+
+        st.divider()
+        col_atualizar, col_info, _ = st.columns([2, 4, 4])
+        with col_atualizar:
+            if st.button("🔄 Atualizar Catálogo", type="primary", use_container_width=True):
+                st.session_state['df_produtos'] = df_cat_editado
+                sincronizar_tabelas()
+                st.success("✅ Catálogo e permissões atualizados para todas as lojas!")
+                st.rerun()
+        with col_info:
+            total_prods = len(df_cat_editado)
+            st.info(f"📦 **{total_prods}** produtos cadastrados  •  "
+                    f"**{len(LOJAS)}** lojas configuradas")
