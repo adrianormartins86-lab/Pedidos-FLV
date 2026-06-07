@@ -130,17 +130,17 @@ div[data-testid="stVerticalBlockBorderWrapper"]:hover {
     box-shadow: 0 6px 24px rgba(0,0,0,.35) !important;
 }
 
-/* ── Métricas (Ajustadas para não cortar os números) ── */
+/* ── Métricas ── */
 [data-testid="stMetric"] {
     background-color: var(--bg-card);
     border: 1px solid var(--border);
     border-radius: 10px;
-    padding: 10px 10px; /* Reduzido o padding para sobrar mais espaço interno */
+    padding: 10px 10px;
 }
 [data-testid="stMetricValue"] { 
     color: var(--green-bright) !important; 
     font-weight: 700; 
-    font-size: 1.8rem !important; /* Trava o tamanho para não estourar a caixa */
+    font-size: 1.8rem !important; 
 }
 [data-testid="stMetricLabel"] { color: var(--text-muted) !important; }
 
@@ -261,17 +261,21 @@ if not acesso_total:
     </style>
     """, unsafe_allow_html=True)
 
+# Limpeza de cache se a estrutura for quebrada
 limpar_cache = False
 if 'df_pedidos' in st.session_state:
     if any(l not in st.session_state['df_pedidos'].columns for l in LOJAS):
         limpar_cache = True
+if 'df_estoque' in st.session_state:
+    if any(l not in st.session_state['df_estoque'].columns for l in LOJAS):
+        limpar_cache = True
 
 if limpar_cache:
-    for k in ('df_pedidos', 'df_produtos'):
+    for k in ('df_pedidos', 'df_produtos', 'df_estoque'):
         st.session_state.pop(k, None)
 
 if 'df_produtos' not in st.session_state:
-    # BASE FLV NORMAL COMPLETA
+    # BASE FLV NORMAL (Códigos nulos ajustados para a casa dos 9000 para evitar duplicação cartesiana)
     produtos_iniciais = [
         {"Código": 1571, "Descrição": "Abacate Cx 20 Kg", "Tipo": "Box"},
         {"Código": 2614, "Descrição": "Abacaxi Doce Mel Cx c/7", "Tipo": "Box"},
@@ -287,10 +291,10 @@ if 'df_produtos' not in st.session_state:
         {"Código": 240, "Descrição": "Abobora Paulista Verde cx 22Kg", "Tipo": "Pedra"},
         {"Código": 85, "Descrição": "Acelga Cx c/8", "Tipo": "Pedra"},
         {"Código": 1746, "Descrição": "Alface Americana unid", "Tipo": "Pedra"},
-        {"Código": 0, "Descrição": "Alho Nacional Cx 10Kg", "Tipo": "Box"},
+        {"Código": 9001, "Descrição": "Alho Nacional Cx 10Kg", "Tipo": "Box"}, # Corrigido
         {"Código": 320, "Descrição": "Alho Poro dz", "Tipo": "Box"},
         {"Código": 894, "Descrição": "Ameixa Importada Cx 9Kg", "Tipo": "Box"},
-        {"Código": 0, "Descrição": "Ameixa Nacional", "Tipo": "Box"},
+        {"Código": 9002, "Descrição": "Ameixa Nacional", "Tipo": "Box"}, # Corrigido
         {"Código": 504, "Descrição": "Amendoim sc 10Kg", "Tipo": "Box"},
         {"Código": 113, "Descrição": "Aspargos", "Tipo": "Box"},
         {"Código": 896, "Descrição": "Atemoia Cx 4Kg", "Tipo": "Box"},
@@ -311,14 +315,14 @@ if 'df_produtos' not in st.session_state:
         {"Código": 64, "Descrição": "Brocolis Chines BDJ", "Tipo": "Box"},
         {"Código": 707, "Descrição": "Cabotia 300g Bjda Descascada", "Tipo": "Pedra"},
         {"Código": 28, "Descrição": "Caju bandeija cx c/4", "Tipo": "Box"},
-        {"Código": 0, "Descrição": "Caqui Fuyu cx 20Kg", "Tipo": "Box"},
-        {"Código": 0, "Descrição": "Caqui Kioto / Chocolate cx 20Kg", "Tipo": "Box"},
+        {"Código": 9003, "Descrição": "Caqui Fuyu cx 20Kg", "Tipo": "Box"}, # Corrigido
+        {"Código": 9004, "Descrição": "Caqui Kioto / Chocolate cx 20Kg", "Tipo": "Box"}, # Corrigido
         {"Código": 264, "Descrição": "Caqui Rama Forte Cx 5Kg", "Tipo": "Box"},
         {"Código": 69, "Descrição": "Cara Cx 22Kg", "Tipo": "Pedra"},
         {"Código": 127, "Descrição": "Carambola bandeija cx c/4", "Tipo": "Box"},
         {"Código": 74, "Descrição": "Caxi Cx 20Kg", "Tipo": "Pedra"},
         {"Código": 2730, "Descrição": "Cebola Branca Bdja", "Tipo": "Pedra"},
-        {"Código": 900, "Descrição": "Cebola cx 3 Saco 20Kg", "Tipo": "Box"},
+        {"Código": 9000, "Descrição": "Cebola cx 3 Saco 20Kg", "Tipo": "Box"},
         {"Código": 43, "Descrição": "Cebola Roxa Saco 20Kg", "Tipo": "Box"},
         {"Código": 17, "Descrição": "Cenoura Baby un", "Tipo": "Box"},
         {"Código": 267, "Descrição": "Cenoura Cx 21kg", "Tipo": "Pedra"},
@@ -344,10 +348,10 @@ if 'df_produtos' not in st.session_state:
         {"Código": 1651, "Descrição": "Laranja Bahia Cx 18Kg", "Tipo": "Box"},
         {"Código": 1599, "Descrição": "Laranja Bahia importada Cx 15Kg", "Tipo": "Box"},
         {"Código": 1307, "Descrição": "Laranja Lima Cx 18Kg", "Tipo": "Box"},
-        {"Código": 0, "Descrição": "Laranja Lima PC 1,5KG", "Tipo": "Pedra"},
+        {"Código": 9005, "Descrição": "Laranja Lima PC 1,5KG", "Tipo": "Pedra"}, # Corrigido
         {"Código": 1516, "Descrição": "Laranja P/ Suco Cx 20Kg", "Tipo": "Pedra"},
         {"Código": 53, "Descrição": "Laranja Pera Cx 20Kg", "Tipo": "Pedra"},
-        {"Código": 0, "Descrição": "Laranja Pera PC 3 KG", "Tipo": "Pedra"},
+        {"Código": 9006, "Descrição": "Laranja Pera PC 3 KG", "Tipo": "Pedra"}, # Corrigido
         {"Código": 288, "Descrição": "Laranja Pre Cozida un", "Tipo": "Box"},
         {"Código": 13, "Descrição": "Lima Da Persia Cx 10Kg", "Tipo": "Box"},
         {"Código": 44, "Descrição": "Limao Cx 22kg 22Kg", "Tipo": "Box"},
@@ -355,8 +359,8 @@ if 'df_produtos' not in st.session_state:
         {"Código": 91, "Descrição": "Limao Rosa Cx 20Kg", "Tipo": "Pedra"},
         {"Código": 522, "Descrição": "Limao Siciliano Cx 15Kg", "Tipo": "Box"},
         {"Código": 291, "Descrição": "Maça Argentina Cx 18Kg", "Tipo": "Box"},
-        {"Código": 0, "Descrição": "Maça Fuji Cx 18Kg", "Tipo": "Box"},
-        {"Código": 0, "Descrição": "Maça Gala Cx 18Kg", "Tipo": "Box"},
+        {"Código": 9007, "Descrição": "Maça Fuji Cx 18Kg", "Tipo": "Box"}, # Corrigido
+        {"Código": 9008, "Descrição": "Maça Gala Cx 18Kg", "Tipo": "Box"}, # Corrigido
         {"Código": 1697, "Descrição": "Maça Gransmith Cx 1/2 9Kg", "Tipo": "Box"},
         {"Código": 1652, "Descrição": "Maça Pacote 1kg diversos cx 18un", "Tipo": "Box"},
         {"Código": 2052, "Descrição": "Maça Pink Lady Cx 18Kg", "Tipo": "Box"},
@@ -373,11 +377,11 @@ if 'df_produtos' not in st.session_state:
         {"Código": 1646, "Descrição": "Maracuja Doce Cx Plastica 10Kg", "Tipo": "Box"},
         {"Código": 518, "Descrição": "Maxi Pecan 250G un", "Tipo": "Box"},
         {"Código": 546, "Descrição": "Maxixe Bandeja 300g", "Tipo": "Pedra"},
-        {"Código": 3, "Descrição": "Melancia Amarela", "Tipo": "Pedra"},
+        {"Código": 3003, "Descrição": "Melancia Amarela", "Tipo": "Pedra"}, # Alterado para 3003 (havia conflito com 3)
         {"Código": 673, "Descrição": "Melancia Baby Cx 14Kg", "Tipo": "Box"},
         {"Código": 2, "Descrição": "Melancia Favo de Mel", "Tipo": "Pedra"},
         {"Código": 1, "Descrição": "Melancia Un", "Tipo": "Pedra"},
-        {"Código": 0, "Descrição": "Melão Amarelo Gaia Cx 13kg", "Tipo": "Box"},
+        {"Código": 9009, "Descrição": "Melão Amarelo Gaia Cx 13kg", "Tipo": "Box"}, # Corrigido
         {"Código": 1409, "Descrição": "Melão Bebezinho", "Tipo": "Box"},
         {"Código": 198, "Descrição": "Melao Cantalupe Cx 10Kg", "Tipo": "Box"},
         {"Código": 412, "Descrição": "Melao Cepi Amarelo Cx 10Kg", "Tipo": "Box"},
@@ -438,10 +442,10 @@ if 'df_produtos' not in st.session_state:
         {"Código": 538, "Descrição": "Tomatinho Bdj Naranti", "Tipo": "Pedra"},
         {"Código": 147, "Descrição": "Tomatinho cocktail holandez cx 6Kg", "Tipo": "Box"},
         {"Código": 100, "Descrição": "Uva Niagara Bdja cx c/10", "Tipo": "Box"},
-        {"Código": 0, "Descrição": "Uva Preta 500g Bdja cx c/10", "Tipo": "Box"},
-        {"Código": 0, "Descrição": "Uva Preta Benetaka Bdja cx c/10", "Tipo": "Box"},
-        {"Código": 0, "Descrição": "Uva Verde 500g Bdja cx c/10", "Tipo": "Box"},
-        {"Código": 0, "Descrição": "Uva Vermelha 500g Bdja cx c/10", "Tipo": "Box"},
+        {"Código": 9010, "Descrição": "Uva Preta 500g Bdja cx c/10", "Tipo": "Box"}, # Corrigido
+        {"Código": 9011, "Descrição": "Uva Preta Benetaka Bdja cx c/10", "Tipo": "Box"}, # Corrigido
+        {"Código": 9012, "Descrição": "Uva Verde 500g Bdja cx c/10", "Tipo": "Box"}, # Corrigido
+        {"Código": 9013, "Descrição": "Uva Vermelha 500g Bdja cx c/10", "Tipo": "Box"}, # Corrigido
         {"Código": 68, "Descrição": "Vagem Bdj", "Tipo": "Pedra"},
         {"Código": 67, "Descrição": "Vagem kg Cx 11kg", "Tipo": "Pedra"}
     ]
@@ -450,22 +454,42 @@ if 'df_produtos' not in st.session_state:
         df_init[loja] = True
     st.session_state['df_produtos'] = df_init
 
+# Tabela de quantidades
 if 'df_pedidos' not in st.session_state:
     df_p = pd.DataFrame(columns=["Código"] + LOJAS)
     df_p["Código"] = st.session_state['df_produtos']["Código"]
     df_p[LOJAS] = 0
     st.session_state['df_pedidos'] = df_p
 
+# Tabela de estoque
+if 'df_estoque' not in st.session_state:
+    df_e = pd.DataFrame(columns=["Código"] + LOJAS)
+    df_e["Código"] = st.session_state['df_produtos']["Código"]
+    df_e[LOJAS] = 0
+    st.session_state['df_estoque'] = df_e
+
 def sincronizar_tabelas():
     df_prod = st.session_state['df_produtos']
-    df_ped  = st.session_state['df_pedidos']
-    df_ped  = df_ped[df_ped["Código"].isin(df_prod["Código"])]
-    novos   = df_prod[~df_prod["Código"].isin(df_ped["Código"])]["Código"]
-    if not novos.empty:
-        df_n = pd.DataFrame({"Código": novos})
-        df_n[LOJAS] = 0
-        df_ped = pd.concat([df_ped, df_n], ignore_index=True)
+    
+    # Sincroniza df_pedidos
+    df_ped = st.session_state['df_pedidos']
+    df_ped = df_ped[df_ped["Código"].isin(df_prod["Código"])]
+    novos_ped = df_prod[~df_prod["Código"].isin(df_ped["Código"])]["Código"]
+    if not novos_ped.empty:
+        df_n_ped = pd.DataFrame({"Código": novos_ped})
+        df_n_ped[LOJAS] = 0
+        df_ped = pd.concat([df_ped, df_n_ped], ignore_index=True)
     st.session_state['df_pedidos'] = df_ped
+    
+    # Sincroniza df_estoque
+    df_est = st.session_state['df_estoque']
+    df_est = df_est[df_est["Código"].isin(df_prod["Código"])]
+    novos_est = df_prod[~df_prod["Código"].isin(df_est["Código"])]["Código"]
+    if not novos_est.empty:
+        df_n_est = pd.DataFrame({"Código": novos_est})
+        df_n_est[LOJAS] = 0
+        df_est = pd.concat([df_est, df_n_est], ignore_index=True)
+    st.session_state['df_estoque'] = df_est
 
 sincronizar_tabelas()
 
@@ -511,7 +535,7 @@ if perfil_navegacao == "Separação e Fechamento":
         <span style="font-size: 26px; margin-right: 12px;">📊</span>
         <div style="display: inline-block; vertical-align: top;">
             <div style="font-size: 20px; font-weight: 700; color: var(--text-header);">Separação e Fechamento</div>
-            <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Consolidado geral — edite quantidades e filtre por setor</div>
+            <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Consolidado geral de quantidades (O estoque das lojas não é exibido aqui)</div>
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -578,9 +602,11 @@ if perfil_navegacao == "Separação e Fechamento":
             )
 
         with col_limpa:
-            if st.button("🚨 Zerar Pedidos", use_container_width=True):
+            # Botão modificado para limpar o Pedido e o Estoque simultaneamente
+            if st.button("🚨 Zerar Pedidos/Estoque", use_container_width=True):
                 st.session_state['df_pedidos'][LOJAS] = 0
-                st.success("✅ Tabela zerada! Pronto para nova semana.")
+                st.session_state['df_estoque'][LOJAS] = 0
+                st.success("✅ Tabelas de pedidos e estoque zeradas! Pronto para nova semana.")
                 st.rerun()
 
 # ─────────────────────────────────────────────
@@ -601,7 +627,7 @@ elif perfil_navegacao == "Visão das Lojas":
                 <span style="font-size:22px">📋</span>
                 <div>
                     <div class="topbar-title">{loja_selecionada} — FLV Normal</div>
-                    <div class="topbar-sub">Preencha as quantidades necessárias e salve o pedido da semana</div>
+                    <div class="topbar-sub">Preencha o estoque atual e a quantidade necessária para o pedido</div>
                 </div>
             </div>
         </div>
@@ -612,27 +638,29 @@ elif perfil_navegacao == "Visão das Lojas":
             st.session_state['usuario_logado'] = None
             st.rerun()
 
+    # 1. Filtra os produtos permitidos
     df_visiveis = st.session_state['df_produtos'][
         st.session_state['df_produtos'][loja_selecionada] == True
     ]
-    df_loja = pd.merge(
-        df_visiveis[["Código","Descrição","Tipo"]],
-        st.session_state['df_pedidos'][["Código", loja_selecionada]],
-        on="Código"
-    )
+    df_loja = df_visiveis[["Código","Descrição","Tipo"]].copy()
+    
+    # 2. Prepara colunas de Estoque e Qtde para a loja selecionada
+    df_est = st.session_state['df_estoque'][["Código", loja_selecionada]].rename(columns={loja_selecionada: "Estoque"})
+    df_qtd = st.session_state['df_pedidos'][["Código", loja_selecionada]].rename(columns={loja_selecionada: "Qtde"})
+    
+    # 3. Faz o merge de tudo
+    df_loja = pd.merge(df_loja, df_est, on="Código", how="left")
+    df_loja = pd.merge(df_loja, df_qtd, on="Código", how="left")
 
     with st.container(border=True):
-        st.info("💡 **Dica:** Clique em uma célula da coluna **Qtde** para editar. "
-                "A loja tem visão total do mix permitido (Pedra e Box).")
+        st.info("💡 **Dica:** Preencha primeiro o **Estoque** e depois a **Qtde** do pedido.")
 
         col_cfg_loja = {
             "Código":         st.column_config.NumberColumn(width=85, format="%d", disabled=True),
             "Descrição":      st.column_config.TextColumn(disabled=True),
             "Tipo":           st.column_config.TextColumn("Setor", width=100, disabled=True),
-            loja_selecionada: st.column_config.NumberColumn(
-                "🛒 Qtde", width=100, min_value=0, step=1,
-                help="Digite a quantidade desejada para esta semana"
-            ),
+            "Estoque":        st.column_config.NumberColumn("📦 Estoque", width=100, min_value=0, step=1),
+            "Qtde":           st.column_config.NumberColumn("🛒 Qtde", width=100, min_value=0, step=1)
         }
 
         df_editado = st.data_editor(
@@ -640,19 +668,16 @@ elif perfil_navegacao == "Visão das Lojas":
             hide_index=True, use_container_width=True, height=520
         )
 
-        itens_com_pedido = int((df_editado[loja_selecionada] > 0).sum())
+        itens_com_pedido = int((df_editado["Qtde"] > 0).sum())
         total_itens      = len(df_editado)
-        total_unidades   = int(df_editado[loja_selecionada].sum())
+        total_unidades   = int(df_editado["Qtde"].sum())
         pct              = round(itens_com_pedido / total_itens * 100) if total_itens else 0
 
         st.divider()
-        
-        # ─── AQUI ESTÁ O AJUSTE DAS COLUNAS PARA AS MÉTRICAS ───
-        # Aumentamos o peso das primeiras colunas (2.5, 2.2, 1.8) para as caixas de métricas terem mais espaço
         m1, m2, m3, _, col_btn = st.columns([2.5, 2.2, 1.8, 0.5, 3])
 
         with m1:
-            st.metric("Itens preenchidos", f"{itens_com_pedido} / {total_itens}")
+            st.metric("Itens preenchidos (Pedido)", f"{itens_com_pedido} / {total_itens}")
         with m2:
             st.metric("Total de unidades", total_unidades)
         with m3:
@@ -662,8 +687,10 @@ elif perfil_navegacao == "Visão das Lojas":
             if st.button("💾 Salvar Pedido da Semana", type="primary", use_container_width=True):
                 for _, row in df_editado.iterrows():
                     mask = st.session_state['df_pedidos']["Código"] == row["Código"]
-                    st.session_state['df_pedidos'].loc[mask, loja_selecionada] = row[loja_selecionada]
-                st.success(f"✅ Pedido da {loja_selecionada} salvo com sucesso!")
+                    # Salva as duas informações em suas respectivas tabelas
+                    st.session_state['df_pedidos'].loc[mask, loja_selecionada] = row["Qtde"]
+                    st.session_state['df_estoque'].loc[mask, loja_selecionada] = row["Estoque"]
+                st.success(f"✅ Estoque e Pedido da {loja_selecionada} salvos com sucesso!")
 
 # ─────────────────────────────────────────────
 # ROTA 3: CATÁLOGO DE PRODUTOS
