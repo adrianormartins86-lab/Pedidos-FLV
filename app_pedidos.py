@@ -275,7 +275,6 @@ if limpar_cache:
         st.session_state.pop(k, None)
 
 if 'df_produtos' not in st.session_state:
-    # BASE FLV NORMAL (Códigos nulos ajustados para a casa dos 9000 para evitar duplicação cartesiana)
     produtos_iniciais = [
         {"Código": 1571, "Descrição": "Abacate Cx 20 Kg", "Tipo": "Box"},
         {"Código": 2614, "Descrição": "Abacaxi Doce Mel Cx c/7", "Tipo": "Box"},
@@ -291,10 +290,10 @@ if 'df_produtos' not in st.session_state:
         {"Código": 240, "Descrição": "Abobora Paulista Verde cx 22Kg", "Tipo": "Pedra"},
         {"Código": 85, "Descrição": "Acelga Cx c/8", "Tipo": "Pedra"},
         {"Código": 1746, "Descrição": "Alface Americana unid", "Tipo": "Pedra"},
-        {"Código": 9001, "Descrição": "Alho Nacional Cx 10Kg", "Tipo": "Box"}, # Corrigido
+        {"Código": 9001, "Descrição": "Alho Nacional Cx 10Kg", "Tipo": "Box"},
         {"Código": 320, "Descrição": "Alho Poro dz", "Tipo": "Box"},
         {"Código": 894, "Descrição": "Ameixa Importada Cx 9Kg", "Tipo": "Box"},
-        {"Código": 9002, "Descrição": "Ameixa Nacional", "Tipo": "Box"}, # Corrigido
+        {"Código": 9002, "Descrição": "Ameixa Nacional", "Tipo": "Box"},
         {"Código": 504, "Descrição": "Amendoim sc 10Kg", "Tipo": "Box"},
         {"Código": 113, "Descrição": "Aspargos", "Tipo": "Box"},
         {"Código": 896, "Descrição": "Atemoia Cx 4Kg", "Tipo": "Box"},
@@ -315,8 +314,8 @@ if 'df_produtos' not in st.session_state:
         {"Código": 64, "Descrição": "Brocolis Chines BDJ", "Tipo": "Box"},
         {"Código": 707, "Descrição": "Cabotia 300g Bjda Descascada", "Tipo": "Pedra"},
         {"Código": 28, "Descrição": "Caju bandeija cx c/4", "Tipo": "Box"},
-        {"Código": 9003, "Descrição": "Caqui Fuyu cx 20Kg", "Tipo": "Box"}, # Corrigido
-        {"Código": 9004, "Descrição": "Caqui Kioto / Chocolate cx 20Kg", "Tipo": "Box"}, # Corrigido
+        {"Código": 9003, "Descrição": "Caqui Fuyu cx 20Kg", "Tipo": "Box"},
+        {"Código": 9004, "Descrição": "Caqui Kioto / Chocolate cx 20Kg", "Tipo": "Box"},
         {"Código": 264, "Descrição": "Caqui Rama Forte Cx 5Kg", "Tipo": "Box"},
         {"Código": 69, "Descrição": "Cara Cx 22Kg", "Tipo": "Pedra"},
         {"Código": 127, "Descrição": "Carambola bandeija cx c/4", "Tipo": "Box"},
@@ -348,10 +347,10 @@ if 'df_produtos' not in st.session_state:
         {"Código": 1651, "Descrição": "Laranja Bahia Cx 18Kg", "Tipo": "Box"},
         {"Código": 1599, "Descrição": "Laranja Bahia importada Cx 15Kg", "Tipo": "Box"},
         {"Código": 1307, "Descrição": "Laranja Lima Cx 18Kg", "Tipo": "Box"},
-        {"Código": 9005, "Descrição": "Laranja Lima PC 1,5KG", "Tipo": "Pedra"}, # Corrigido
+        {"Código": 9005, "Descrição": "Laranja Lima PC 1,5KG", "Tipo": "Pedra"},
         {"Código": 1516, "Descrição": "Laranja P/ Suco Cx 20Kg", "Tipo": "Pedra"},
         {"Código": 53, "Descrição": "Laranja Pera Cx 20Kg", "Tipo": "Pedra"},
-        {"Código": 9006, "Descrição": "Laranja Pera PC 3 KG", "Tipo": "Pedra"}, # Corrigido
+        {"Código": 9006, "Descrição": "Laranja Pera PC 3 KG", "Tipo": "Pedra"},
         {"Código": 288, "Descrição": "Laranja Pre Cozida un", "Tipo": "Box"},
         {"Código": 13, "Descrição": "Lima Da Persia Cx 10Kg", "Tipo": "Box"},
         {"Código": 44, "Descrição": "Limao Cx 22kg 22Kg", "Tipo": "Box"},
@@ -359,8 +358,8 @@ if 'df_produtos' not in st.session_state:
         {"Código": 91, "Descrição": "Limao Rosa Cx 20Kg", "Tipo": "Pedra"},
         {"Código": 522, "Descrição": "Limao Siciliano Cx 15Kg", "Tipo": "Box"},
         {"Código": 291, "Descrição": "Maça Argentina Cx 18Kg", "Tipo": "Box"},
-        {"Código": 9007, "Descrição": "Maça Fuji Cx 18Kg", "Tipo": "Box"}, # Corrigido
-        {"Código": 9008, "Descrição": "Maça Gala Cx 18Kg", "Tipo": "Box"}, # Corrigido
+        {"Código": 9007, "Descrição": "Maça Fuji Cx 18Kg", "Tipo": "Box"},
+        {"Código": 9008, "Descrição": "Maça Gala Cx 18Kg", "Tipo": "Box"},
         {"Código": 1697, "Descrição": "Maça Gransmith Cx 1/2 9Kg", "Tipo": "Box"},
         {"Código": 1652, "Descrição": "Maça Pacote 1kg diversos cx 18un", "Tipo": "Box"},
         {"Código": 2052, "Descrição": "Maça Pink Lady Cx 18Kg", "Tipo": "Box"},
@@ -377,11 +376,11 @@ if 'df_produtos' not in st.session_state:
         {"Código": 1646, "Descrição": "Maracuja Doce Cx Plastica 10Kg", "Tipo": "Box"},
         {"Código": 518, "Descrição": "Maxi Pecan 250G un", "Tipo": "Box"},
         {"Código": 546, "Descrição": "Maxixe Bandeja 300g", "Tipo": "Pedra"},
-        {"Código": 3003, "Descrição": "Melancia Amarela", "Tipo": "Pedra"}, # Alterado para 3003 (havia conflito com 3)
+        {"Código": 3003, "Descrição": "Melancia Amarela", "Tipo": "Pedra"},
         {"Código": 673, "Descrição": "Melancia Baby Cx 14Kg", "Tipo": "Box"},
         {"Código": 2, "Descrição": "Melancia Favo de Mel", "Tipo": "Pedra"},
         {"Código": 1, "Descrição": "Melancia Un", "Tipo": "Pedra"},
-        {"Código": 9009, "Descrição": "Melão Amarelo Gaia Cx 13kg", "Tipo": "Box"}, # Corrigido
+        {"Código": 9009, "Descrição": "Melão Amarelo Gaia Cx 13kg", "Tipo": "Box"},
         {"Código": 1409, "Descrição": "Melão Bebezinho", "Tipo": "Box"},
         {"Código": 198, "Descrição": "Melao Cantalupe Cx 10Kg", "Tipo": "Box"},
         {"Código": 412, "Descrição": "Melao Cepi Amarelo Cx 10Kg", "Tipo": "Box"},
@@ -442,10 +441,10 @@ if 'df_produtos' not in st.session_state:
         {"Código": 538, "Descrição": "Tomatinho Bdj Naranti", "Tipo": "Pedra"},
         {"Código": 147, "Descrição": "Tomatinho cocktail holandez cx 6Kg", "Tipo": "Box"},
         {"Código": 100, "Descrição": "Uva Niagara Bdja cx c/10", "Tipo": "Box"},
-        {"Código": 9010, "Descrição": "Uva Preta 500g Bdja cx c/10", "Tipo": "Box"}, # Corrigido
-        {"Código": 9011, "Descrição": "Uva Preta Benetaka Bdja cx c/10", "Tipo": "Box"}, # Corrigido
-        {"Código": 9012, "Descrição": "Uva Verde 500g Bdja cx c/10", "Tipo": "Box"}, # Corrigido
-        {"Código": 9013, "Descrição": "Uva Vermelha 500g Bdja cx c/10", "Tipo": "Box"}, # Corrigido
+        {"Código": 9010, "Descrição": "Uva Preta 500g Bdja cx c/10", "Tipo": "Box"},
+        {"Código": 9011, "Descrição": "Uva Preta Benetaka Bdja cx c/10", "Tipo": "Box"},
+        {"Código": 9012, "Descrição": "Uva Verde 500g Bdja cx c/10", "Tipo": "Box"},
+        {"Código": 9013, "Descrição": "Uva Vermelha 500g Bdja cx c/10", "Tipo": "Box"},
         {"Código": 68, "Descrição": "Vagem Bdj", "Tipo": "Pedra"},
         {"Código": 67, "Descrição": "Vagem kg Cx 11kg", "Tipo": "Pedra"}
     ]
@@ -454,12 +453,20 @@ if 'df_produtos' not in st.session_state:
         df_init[loja] = True
     st.session_state['df_produtos'] = df_init
 
-# Tabela de quantidades
+# Tabela de quantidades (Atualizada com R$Preço e OBS:)
 if 'df_pedidos' not in st.session_state:
-    df_p = pd.DataFrame(columns=["Código"] + LOJAS)
+    df_p = pd.DataFrame(columns=["Código"] + LOJAS + ["R$Preço", "OBS:"])
     df_p["Código"] = st.session_state['df_produtos']["Código"]
     df_p[LOJAS] = 0
+    df_p["R$Preço"] = 0.0
+    df_p["OBS:"] = ""
     st.session_state['df_pedidos'] = df_p
+else:
+    # Prevenção: adiciona as colunas novas caso a sessão já estivesse aberta
+    if "R$Preço" not in st.session_state['df_pedidos'].columns:
+        st.session_state['df_pedidos']["R$Preço"] = 0.0
+    if "OBS:" not in st.session_state['df_pedidos'].columns:
+        st.session_state['df_pedidos']["OBS:"] = ""
 
 # Tabela de estoque
 if 'df_estoque' not in st.session_state:
@@ -478,6 +485,8 @@ def sincronizar_tabelas():
     if not novos_ped.empty:
         df_n_ped = pd.DataFrame({"Código": novos_ped})
         df_n_ped[LOJAS] = 0
+        df_n_ped["R$Preço"] = 0.0
+        df_n_ped["OBS:"] = ""
         df_ped = pd.concat([df_ped, df_n_ped], ignore_index=True)
     st.session_state['df_pedidos'] = df_ped
     
@@ -549,6 +558,10 @@ if perfil_navegacao == "Separação e Fechamento":
         df_final = pd.merge(df_base, st.session_state['df_pedidos'], on="Código")
         df_final["TOTAL GERAL"] = df_final[LOJAS].sum(axis=1)
 
+        # Ordenar para garantir que Preço e OBS fiquem no final
+        cols_order = ["Código", "Descrição", "Tipo"] + LOJAS + ["TOTAL GERAL", "R$Preço", "OBS:"]
+        df_final = df_final[cols_order]
+
         if filtro_setor != "Todos":
             df_final = df_final[df_final["Tipo"] == filtro_setor].reset_index(drop=True)
 
@@ -557,6 +570,8 @@ if perfil_navegacao == "Separação e Fechamento":
             "Descrição":   st.column_config.TextColumn(disabled=True),
             "Tipo":        st.column_config.TextColumn("Setor", width=100, disabled=True),
             "TOTAL GERAL": st.column_config.NumberColumn("TOTAL ▶", width=90, format="%d", disabled=True),
+            "R$Preço":     st.column_config.NumberColumn("R$ Preço", width=100, format="R$ %.2f", min_value=0.0, step=0.01),
+            "OBS:":        st.column_config.TextColumn("OBS:", width=200)
         }
         for loja in LOJAS:
             col_cfg[loja] = st.column_config.NumberColumn(loja, format="%d", min_value=0, step=1)
@@ -575,7 +590,12 @@ if perfil_navegacao == "Separação e Fechamento":
                     mask = st.session_state['df_pedidos']["Código"] == row["Código"]
                     for loja in LOJAS:
                         st.session_state['df_pedidos'].loc[mask, loja] = row[loja]
-                st.success("✅ Ajustes salvos com sucesso!")
+                    
+                    # Salva também o Preço e a Observação
+                    st.session_state['df_pedidos'].loc[mask, "R$Preço"] = row["R$Preço"]
+                    st.session_state['df_pedidos'].loc[mask, "OBS:"] = row["OBS:"]
+                    
+                st.success("✅ Ajustes, preços e observações salvos com sucesso!")
                 st.rerun()
 
         with col_csv:
@@ -602,11 +622,13 @@ if perfil_navegacao == "Separação e Fechamento":
             )
 
         with col_limpa:
-            # Botão modificado para limpar o Pedido e o Estoque simultaneamente
+            # Botão modificado para limpar o Pedido, Estoque, Preços e Observações simultaneamente
             if st.button("🚨 Zerar Pedidos/Estoque", use_container_width=True):
                 st.session_state['df_pedidos'][LOJAS] = 0
+                st.session_state['df_pedidos']["R$Preço"] = 0.0
+                st.session_state['df_pedidos']["OBS:"] = ""
                 st.session_state['df_estoque'][LOJAS] = 0
-                st.success("✅ Tabelas de pedidos e estoque zeradas! Pronto para nova semana.")
+                st.success("✅ Tabelas de pedidos, estoque e valores zeradas! Pronto para nova semana.")
                 st.rerun()
 
 # ─────────────────────────────────────────────
