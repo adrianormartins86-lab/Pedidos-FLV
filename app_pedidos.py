@@ -130,14 +130,18 @@ div[data-testid="stVerticalBlockBorderWrapper"]:hover {
     box-shadow: 0 6px 24px rgba(0,0,0,.35) !important;
 }
 
-/* ── Métricas ── */
+/* ── Métricas (Ajustadas para não cortar os números) ── */
 [data-testid="stMetric"] {
     background-color: var(--bg-card);
     border: 1px solid var(--border);
     border-radius: 10px;
-    padding: 12px 16px;
+    padding: 10px 10px; /* Reduzido o padding para sobrar mais espaço interno */
 }
-[data-testid="stMetricValue"] { color: var(--green-bright) !important; font-weight: 700; }
+[data-testid="stMetricValue"] { 
+    color: var(--green-bright) !important; 
+    font-weight: 700; 
+    font-size: 1.8rem !important; /* Trava o tamanho para não estourar a caixa */
+}
 [data-testid="stMetricLabel"] { color: var(--text-muted) !important; }
 
 /* ── Ocultar sidebar para lojas ── */
@@ -514,7 +518,6 @@ if perfil_navegacao == "Separação e Fechamento":
 
     with st.container(border=True):
         
-        # Filtro de Setor exclusivo para o Administrador
         filtro_setor = st.radio("🔍 Filtrar Exibição por Setor:", ["Todos", "Box", "Pedra"], horizontal=True)
         st.write("<br>", unsafe_allow_html=True)
 
@@ -522,7 +525,6 @@ if perfil_navegacao == "Separação e Fechamento":
         df_final = pd.merge(df_base, st.session_state['df_pedidos'], on="Código")
         df_final["TOTAL GERAL"] = df_final[LOJAS].sum(axis=1)
 
-        # Aplica o filtro selecionado
         if filtro_setor != "Todos":
             df_final = df_final[df_final["Tipo"] == filtro_setor].reset_index(drop=True)
 
@@ -644,7 +646,10 @@ elif perfil_navegacao == "Visão das Lojas":
         pct              = round(itens_com_pedido / total_itens * 100) if total_itens else 0
 
         st.divider()
-        m1, m2, m3, _, col_btn = st.columns([1.5, 1.5, 1.5, 2, 3])
+        
+        # ─── AQUI ESTÁ O AJUSTE DAS COLUNAS PARA AS MÉTRICAS ───
+        # Aumentamos o peso das primeiras colunas (2.5, 2.2, 1.8) para as caixas de métricas terem mais espaço
+        m1, m2, m3, _, col_btn = st.columns([2.5, 2.2, 1.8, 0.5, 3])
 
         with m1:
             st.metric("Itens preenchidos", f"{itens_com_pedido} / {total_itens}")
