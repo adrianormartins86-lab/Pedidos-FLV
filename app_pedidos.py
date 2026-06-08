@@ -185,11 +185,15 @@ div[data-testid="stVerticalBlockBorderWrapper"]:hover {
 """, unsafe_allow_html=True)
 
 # ─────────────────────────────────────────────
-# CONSTANTES
+# CONSTANTES E MAPEAMENTO
 # ─────────────────────────────────────────────
 LOJAS = ["Loja 01", "Loja 02", "Loja 03", "Loja 04", "Loja 05", "Loja 06", "Loja 07", "Loja 08"]
 NOVOS_NOMES_LOJAS = ["291", "292", "293", "294", "295", "296", "297", "298"]
 MAPA_LOJAS = dict(zip(LOJAS, NOVOS_NOMES_LOJAS))
+
+# Controle de estado para forçar a limpeza visual do Data Editor
+if 'reset_counter' not in st.session_state:
+    st.session_state['reset_counter'] = 0
 
 # ─────────────────────────────────────────────
 # SISTEMA DE LOGIN
@@ -579,9 +583,11 @@ if perfil_navegacao == "Separação e Fechamento":
         for loja, novo_nome in MAPA_LOJAS.items():
             col_cfg[loja] = st.column_config.NumberColumn(novo_nome, format="%d", min_value=0, step=1)
 
+        # Injetando f"admin_editor_{st.session_state['reset_counter']}" para resetar o cache visual no clique do botão
         df_editado_admin = st.data_editor(
             df_final, hide_index=True, use_container_width=True,
-            height=580, column_config=col_cfg
+            height=580, column_config=col_cfg,
+            key=f"admin_editor_{st.session_state['reset_counter']}"
         )
 
         st.divider()
@@ -601,7 +607,6 @@ if perfil_navegacao == "Separação e Fechamento":
                 st.rerun()
 
         with col_csv:
-            # Exportação de CSV também com cabeçalhos atualizados
             df_csv = df_editado_admin.copy()
             df_csv = df_csv.rename(columns=MAPA_LOJAS)
             csv = df_csv.to_csv(index=False).encode("utf-8")
@@ -616,7 +621,6 @@ if perfil_navegacao == "Separação e Fechamento":
         with col_excel:
             buffer = io.BytesIO()
             with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
-                # Cria cópia para estruturar a planilha
                 df_export = df_editado_admin.copy()
                 
                 # 1. Renomeia os cabeçalhos das lojas (Loja 01 -> 291, etc)
@@ -643,11 +647,16 @@ if perfil_navegacao == "Separação e Fechamento":
 
         with col_limpa:
             if st.button("🚨 Zerar Pedidos/Estoque", use_container_width=True):
+                # 1. Altera a assinatura da key, forçando a limpeza visual do widget da tabela
+                st.session_state['reset_counter'] += 1
+                
+                # 2. Reseta efetivamente as colunas no DataFrame de dados
                 st.session_state['df_pedidos'][LOJAS] = 0
                 st.session_state['df_pedidos']["R$Preço"] = 0.0
                 st.session_state['df_pedidos']["OBS:"] = ""
                 st.session_state['df_estoque'][LOJAS] = 0
-                st.success("✅ Tabelas de pedidos, estoque e valores zeradas! Pronto para nova semana.")
+                
+                st.success("✅ Tabelas de pedidos, estoque, preços e observações zeradas!")
                 st.rerun()
 
 # ─────────────────────────────────────────────
@@ -662,7 +671,6 @@ elif perfil_navegacao == "Visão das Lojas":
 
     col_info, col_logout = st.columns([8, 2])
     with col_info:
-        # Exibe o número de identificação correspondente na barra superior da loja
         id_loja = MAPA_LOJAS.get(loja_selecionada, loja_selecionada)
         st.markdown(f"""
         <div class="topbar-loja">
@@ -705,7 +713,8 @@ elif perfil_navegacao == "Visão das Lojas":
 
         df_editado = st.data_editor(
             df_loja, column_config=col_cfg_loja,
-            hide_index=True, use_container_width=True, height=520
+            hide_index=True, use_container_width=True, height=520,
+            key=f"loja_editor_{st.session_state['reset_counter']}"
         )
 
         itens_com_pedido = int((df_editado["Qtde"] > 0).sum())
