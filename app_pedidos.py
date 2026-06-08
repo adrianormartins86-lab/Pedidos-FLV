@@ -387,11 +387,11 @@ if 'df_produtos' not in st.session_state:
         df_init[loja] = True
     st.session_state['df_produtos'] = df_init
 
-# Criamos a lista de todos os Nomes de Produtos para usar nos Selectbox
-LISTA_NOMES_PRODUTOS = st.session_state['df_produtos']['Descrição'].tolist()
+# Criamos a lista de todos os Nomes de Produtos (como strings garantidas)
+LISTA_NOMES_PRODUTOS = [str(x) for x in st.session_state['df_produtos']['Descrição'].unique()]
 
 # ─────────────────────────────────────────────
-# MAPA INICIAL DINÂMICO DE FORNECEDORES (AGORA BASEADO NO NOME DO PRODUTO)
+# MAPA INICIAL DINÂMICO DE FORNECEDORES
 # ─────────────────────────────────────────────
 if 'df_fornecedores_config' not in st.session_state:
     mapa_inicial_codigos = {
@@ -821,9 +821,12 @@ elif perfil_navegacao == "Visão Fornecedores (Ademilto)":
                         df_fornecedor["R$ Total"] = df_fornecedor["Total"] * df_fornecedor["R$ Preço"]
                         df_exibicao = df_fornecedor[["Cód", "Produtos", "Total", "R$ Preço", "R$ Total"]].copy()
 
+                        # A MÁGICA: Convertemos a coluna para o tipo Categoria do Pandas.
+                        # Isso obriga o Streamlit a renderizar a Selectbox, sem falhas.
+                        df_exibicao['Produtos'] = pd.Categorical(df_exibicao['Produtos'], categories=LISTA_NOMES_PRODUTOS)
+
                         altura_dinamica = int((len(df_exibicao) + 2) * 36) + 5
                         
-                        # ─── AQUI A MÁGICA DO SELECTBOX PARA OS FORNECEDORES NA TELA DE VISÃO ───
                         col_cfg_forn = {
                             "Cód": st.column_config.NumberColumn(disabled=False, format="%d"),
                             "Produtos": st.column_config.SelectboxColumn("Produtos", options=LISTA_NOMES_PRODUTOS, disabled=False),
@@ -868,13 +871,17 @@ elif perfil_navegacao == "Configurar Fornecedores":
     with st.container(border=True):
         st.caption("Ao adicionar uma nova linha, clique na coluna 'Produto' para selecionar na lista oficial.")
         
+        # O Pandas Categorical garante o Selectbox
+        df_cfg_tela = st.session_state['df_fornecedores_config'].copy()
+        df_cfg_tela['Produto'] = pd.Categorical(df_cfg_tela['Produto'], categories=LISTA_NOMES_PRODUTOS)
+
         col_cfg_setup = {
             "Fornecedor": st.column_config.TextColumn("Nome do Fornecedor", required=True),
             "Produto": st.column_config.SelectboxColumn("Selecione o Produto", options=LISTA_NOMES_PRODUTOS, required=True)
         }
         
         df_cfg_editado = st.data_editor(
-            st.session_state['df_fornecedores_config'],
+            df_cfg_tela,
             num_rows="dynamic",
             use_container_width=True,
             column_config=col_cfg_setup,
