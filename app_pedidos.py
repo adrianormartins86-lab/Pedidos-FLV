@@ -560,7 +560,7 @@ with st.sidebar:
     except Exception:
         st.markdown("🐦")
 
-    st.markdown(f"### Olá, **{usuario_atual}**")
+    st.markdown(f"### Olá, *{usuario_atual}*")
     st.caption("Sistema de Pedidos Integrado")
     st.divider()
 
@@ -569,6 +569,7 @@ with st.sidebar:
             "Separação e Fechamento",
             "Visão das Lojas",
             "Visão Fornecedores (Ademilto)",
+            "Configurar Fornecedores",
             "Catálogo de Produtos"
         ])
     else:
@@ -615,7 +616,7 @@ if perfil_navegacao == "Separação e Fechamento":
             "Código":      st.column_config.NumberColumn(width=80, format="%d", disabled=True),
             "Descrição":   st.column_config.TextColumn(disabled=True),
             "Tipo":        st.column_config.TextColumn("Setor", width=100, disabled=True),
-            "TOTAL GERAL": st.column_config.NumberColumn("TOTAL ▶", width=90, format="%d", disabled=True),
+            "TOTAL GERAL": st.column_config.NumberColumn("TOTAL ▶️", width=90, format="%d", disabled=True),
             "R$Preço":     st.column_config.NumberColumn("R$ Preço", width=100, format="R$ %.2f", min_value=0.0, step=0.01),
             "OBS:":        st.column_config.TextColumn("OBS:", width=200)
         }
@@ -708,7 +709,7 @@ elif perfil_navegacao == "Visão das Lojas":
     df_loja = pd.merge(df_loja, df_qtd, on="Código", how="left")
 
     with st.container(border=True):
-        st.info("💡 **Dica:** Preencha primeiro o **Estoque** e depois a **Qtde** do pedido.")
+        st.info("💡 *Dica:* Preencha primeiro o *Estoque* e depois a *Qtde* do pedido.")
         col_cfg_loja = {
             "Código":         st.column_config.NumberColumn(width=85, format="%d", disabled=True),
             "Descrição":      st.column_config.TextColumn(disabled=True),
@@ -854,6 +855,45 @@ elif perfil_navegacao == "Visão Fornecedores (Ademilto)":
         st.write("<br>", unsafe_allow_html=True)
 
 # ─────────────────────────────────────────────
+# ROTA 4: CONFIGURAR FORNECEDORES
+# ─────────────────────────────────────────────
+elif perfil_navegacao == "Configurar Fornecedores":
+    st.markdown("""
+    <div class="page-header" style="background: linear-gradient(90deg, var(--green-dark) 0%, #0d2018 100%); padding: 14px 20px; border-radius: 10px; margin-bottom: 22px;">
+        <span style="font-size: 26px; margin-right: 12px;">⚙️</span>
+        <div style="display: inline-block; vertical-align: top;">
+            <div style="font-size: 20px; font-weight: 700; color: var(--text-header);">Configuração de Fornecedores</div>
+            <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Selecione os produtos do catálogo oficial e agrupe-os por fornecedor.</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    with st.container(border=True):
+        st.caption("Ao adicionar uma nova linha, clique na coluna 'Produto' para selecionar na lista oficial.")
+        
+        # O Pandas Categorical garante o Selectbox
+        df_cfg_tela = st.session_state['df_fornecedores_config'].copy()
+        df_cfg_tela['Produto'] = pd.Categorical(df_cfg_tela['Produto'], categories=LISTA_NOMES_PRODUTOS)
+
+        col_cfg_setup = {
+            "Fornecedor": st.column_config.TextColumn("Nome do Fornecedor", required=True),
+            "Produto": st.column_config.SelectboxColumn("Selecione o Produto", options=LISTA_NOMES_PRODUTOS, required=True)
+        }
+        
+        df_cfg_editado = st.data_editor(
+            df_cfg_tela,
+            num_rows="dynamic",
+            use_container_width=True,
+            column_config=col_cfg_setup,
+            height=600
+        )
+        
+        if st.button("💾 Salvar Estrutura de Fornecedores", type="primary"):
+            st.session_state['df_fornecedores_config'] = df_cfg_editado
+            st.success("Configuração de fornecedores salva! A visão Ademilto foi atualizada com sucesso.")
+            st.rerun()
+
+# ─────────────────────────────────────────────
 # ROTA 5: CATÁLOGO DE PRODUTOS
 # ─────────────────────────────────────────────
 elif perfil_navegacao == "Catálogo de Produtos":
@@ -868,7 +908,7 @@ elif perfil_navegacao == "Catálogo de Produtos":
     """, unsafe_allow_html=True)
 
     with st.container(border=True):
-        st.caption("➕ Adicione produtos na última linha  •  🗑️ Selecione a linha e pressione **Delete** para remover  •  ✅ Checkboxes controlam visibilidade por loja")
+        st.caption("➕ Adicione produtos na última linha  •  🗑️ Selecione a linha e pressione *Delete* para remover  •  ✅ Checkboxes controlam visibilidade por loja")
 
         config_catalogo = {
             "Código":    st.column_config.NumberColumn("Cód. Interno", width=90, required=True, min_value=0, format="%d"),
@@ -897,5 +937,5 @@ elif perfil_navegacao == "Catálogo de Produtos":
                 st.rerun()
         with col_info:
             total_prods = len(df_cat_editado)
-            st.info(f"📦 **{total_prods}** produtos cadastrados  •  "
-                    f"**{len(LOJAS)}** lojas configuradas")
+            st.info(f"📦 *{total_prods}* produtos cadastrados  •  "
+                    f"*{len(LOJAS)}* lojas configuradas")
