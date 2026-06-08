@@ -569,7 +569,6 @@ with st.sidebar:
             "Separação e Fechamento",
             "Visão das Lojas",
             "Visão Fornecedores (Ademilto)",
-            "Configurar Fornecedores",
             "Catálogo de Produtos"
         ])
     else:
@@ -853,45 +852,6 @@ elif perfil_navegacao == "Visão Fornecedores (Ademilto)":
                             </div>
                         """, unsafe_allow_html=True)
         st.write("<br>", unsafe_allow_html=True)
-
-# ─────────────────────────────────────────────
-# ROTA 4: CONFIGURAR FORNECEDORES
-# ─────────────────────────────────────────────
-elif perfil_navegacao == "Configurar Fornecedores":
-    st.markdown("""
-    <div class="page-header" style="background: linear-gradient(90deg, var(--green-dark) 0%, #0d2018 100%); padding: 14px 20px; border-radius: 10px; margin-bottom: 22px;">
-        <span style="font-size: 26px; margin-right: 12px;">⚙️</span>
-        <div style="display: inline-block; vertical-align: top;">
-            <div style="font-size: 20px; font-weight: 700; color: var(--text-header);">Configuração de Fornecedores</div>
-            <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Selecione os produtos do catálogo oficial e agrupe-os por fornecedor.</div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    with st.container(border=True):
-        st.caption("Ao adicionar uma nova linha, clique na coluna 'Produto' para selecionar na lista oficial.")
-        
-        # O Pandas Categorical garante o Selectbox
-        df_cfg_tela = st.session_state['df_fornecedores_config'].copy()
-        df_cfg_tela['Produto'] = pd.Categorical(df_cfg_tela['Produto'], categories=LISTA_NOMES_PRODUTOS)
-
-        col_cfg_setup = {
-            "Fornecedor": st.column_config.TextColumn("Nome do Fornecedor", required=True),
-            "Produto": st.column_config.SelectboxColumn("Selecione o Produto", options=LISTA_NOMES_PRODUTOS, required=True)
-        }
-        
-        df_cfg_editado = st.data_editor(
-            df_cfg_tela,
-            num_rows="dynamic",
-            use_container_width=True,
-            column_config=col_cfg_setup,
-            height=600
-        )
-        
-        if st.button("💾 Salvar Estrutura de Fornecedores", type="primary"):
-            st.session_state['df_fornecedores_config'] = df_cfg_editado
-            st.success("Configuração de fornecedores salva! A visão Ademilto foi atualizada com sucesso.")
-            st.rerun()
 
 # ─────────────────────────────────────────────
 # ROTA 5: CATÁLOGO DE PRODUTOS
