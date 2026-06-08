@@ -102,7 +102,7 @@ section[data-testid="stSidebar"] .stRadio label { font-size: 14px; }
     overflow: hidden;
     border: 1px solid var(--green-mid) !important;
     box-shadow: 0 4px 20px rgba(0,0,0,.4);
-    font-size: 12px !important; /* Fonte reduzida para caber nos prints */
+    font-size: 12px !important; 
 }
 
 /* ── Célula selecionada ── */
@@ -192,47 +192,34 @@ LOJAS = ["Loja 01", "Loja 02", "Loja 03", "Loja 04", "Loja 05", "Loja 06", "Loja
 NOVOS_NOMES_LOJAS = ["291", "292", "293", "294", "295", "296", "297", "298"]
 MAPA_LOJAS = dict(zip(LOJAS, NOVOS_NOMES_LOJAS))
 
-# ─────────────────────────────────────────────
-# MAPEAMENTO DE FORNECEDORES (ADEMILTO)
-# ─────────────────────────────────────────────
-FORNECEDORES_MAP = {
-    "NIDE": [45, 49, 67, 57, 46, 48, 47],
-    "Claudir Mendes": [57, 46, 49],
-    "SANDRO": [75],
-    "DENIZE": [45, 49, 67, 57, 46, 48, 47, 41, 52, 69, 56],
-    "JOVANO": [1746, 88, 49, 140, 85],
-    "JEFINHO": [85, 140, 256, 267, 88, 57, 45, 49, 1662, 46],
-    "LUCIANO": [61, 41, 49, 56, 45],
-    "THIAGO": [61, 91, 67, 74, 49, 52, 45, 56],
-    "CRISTIAN": [40, 949, 42, 83, 68, 538, 78],
-    "ROGERIO NARANTE": [538],
-    "FERNANDO NARANTE": [46],
-    "SILVIO MAND SALSA": [76],
-    "HORTA": [108, 109],
-    "GLAUCIA MACIEL": [84, 85],
-    "ALEMÃO": [39],
-    "RENAN SS": [72],
-    "NEGUIN": [85, 86, 88, 61, 45],
-    "RODRIGO CHANAN": [85, 86, 88, 61, 1662, 140],
-    "MARCELO MORANGO": [58],
-    "JOÃO BATISTA": [79, 60, 56, 1662, 69],
-    "GIACOMELLO": [95],
-    "PRIMO": [240, 86, 49, 45, 88, 85],
-    "RENATO MANDIOCA": [75],
-    "THIAGO SERRA": [91, 49, 45, 56, 61],
-    "TICO": [236, 237, 707, 2730, 42, 581, 78, 546, 80, 83, 540, 949, 40, 110, 68, 109],
-    "ALGACIR": [1516, 53],
-    "MAURICIO": [62],
-    "PAULO IGASHIBAHI": [47, 48],
-    "GILSOM BATATA": [508, 551],
-    "DORI BATATA": [508, 551],
-    "BANANA SANTOME": [2567, 2569, 2568],
-    "MELANCIA CARLIN": [1],
-    "MELANCIA MARCINHO": [673, 1, 3003],
-    "RODRIGO BATATA": [508]
-}
+FORNECEDORES_ESPECIAIS_LINHA = ["BANANA SANTOME", "MELANCIA CARLIN", "MELANCIA MARCINHO", "RODRIGO BATATA"]
 
-# Controle de estado para forçar a limpeza visual do Data Editor
+# ─────────────────────────────────────────────
+# MAPA INICIAL DINÂMICO DE FORNECEDORES
+# ─────────────────────────────────────────────
+if 'df_fornecedores_config' not in st.session_state:
+    mapa_inicial = {
+        "NIDE": [45, 49, 67, 57, 46, 48, 47], "Claudir Mendes": [57, 46, 49], "SANDRO": [75],
+        "DENIZE": [45, 49, 67, 57, 46, 48, 47, 41, 52, 69, 56], "JOVANO": [1746, 88, 49, 140, 85],
+        "JEFINHO": [85, 140, 256, 267, 88, 57, 45, 49, 1662, 46], "LUCIANO": [61, 41, 49, 56, 45],
+        "THIAGO": [61, 91, 67, 74, 49, 52, 45, 56], "CRISTIAN": [40, 949, 42, 83, 68, 538, 78],
+        "ROGERIO NARANTE": [538], "FERNANDO NARANTE": [46], "SILVIO MAND SALSA": [76],
+        "HORTA": [108, 109], "GLAUCIA MACIEL": [84, 85], "ALEMÃO": [39], "RENAN SS": [72],
+        "NEGUIN": [85, 86, 88, 61, 45], "RODRIGO CHANAN": [85, 86, 88, 61, 1662, 140],
+        "MARCELO MORANGO": [58], "JOÃO BATISTA": [79, 60, 56, 1662, 69], "GIACOMELLO": [95],
+        "PRIMO": [240, 86, 49, 45, 88, 85], "RENATO MANDIOCA": [75], "THIAGO SERRA": [91, 49, 45, 56, 61],
+        "TICO": [236, 237, 707, 2730, 42, 581, 78, 546, 80, 83, 540, 949, 40, 110, 68, 109],
+        "ALGACIR": [1516, 53], "MAURICIO": [62], "PAULO IGASHIBAHI": [47, 48],
+        "GILSOM BATATA": [508, 551], "DORI BATATA": [508, 551], "BANANA SANTOME": [2567, 2569, 2568],
+        "MELANCIA CARLIN": [1], "MELANCIA MARCINHO": [673, 1, 3003], "RODRIGO BATATA": [508]
+    }
+    lista_cfg = []
+    for f, cods in mapa_inicial.items():
+        for c in cods:
+            lista_cfg.append({"Fornecedor": f, "Código": c})
+    st.session_state['df_fornecedores_config'] = pd.DataFrame(lista_cfg)
+
+# Controle de estado visual
 if 'reset_counter' not in st.session_state:
     st.session_state['reset_counter'] = 0
 
@@ -285,7 +272,7 @@ if st.session_state['usuario_logado'] is None:
     st.stop()
 
 # ─────────────────────────────────────────────
-# ESTADO E DADOS
+# ESTADO E DADOS INICIAIS
 # ─────────────────────────────────────────────
 usuario_atual = st.session_state['usuario_logado']
 acesso_total  = usuario_atual == "Administrador"
@@ -308,7 +295,6 @@ if not acesso_total:
     </style>
     """, unsafe_allow_html=True)
 
-# Limpeza de cache se a estrutura for quebrada
 limpar_cache = False
 if 'df_pedidos' in st.session_state:
     if any(l not in st.session_state['df_pedidos'].columns for l in LOJAS):
@@ -500,7 +486,6 @@ if 'df_produtos' not in st.session_state:
         df_init[loja] = True
     st.session_state['df_produtos'] = df_init
 
-# Tabela de quantidades (Atualizada com R$Preço e OBS:)
 if 'df_pedidos' not in st.session_state:
     df_p = pd.DataFrame(columns=["Código"] + LOJAS + ["R$Preço", "OBS:"])
     df_p["Código"] = st.session_state['df_produtos']["Código"]
@@ -514,7 +499,6 @@ else:
     if "OBS:" not in st.session_state['df_pedidos'].columns:
         st.session_state['df_pedidos']["OBS:"] = ""
 
-# Tabela de estoque
 if 'df_estoque' not in st.session_state:
     df_e = pd.DataFrame(columns=["Código"] + LOJAS)
     df_e["Código"] = st.session_state['df_produtos']["Código"]
@@ -523,8 +507,6 @@ if 'df_estoque' not in st.session_state:
 
 def sincronizar_tabelas():
     df_prod = st.session_state['df_produtos']
-    
-    # Sincroniza df_pedidos
     df_ped = st.session_state['df_pedidos']
     df_ped = df_ped[df_ped["Código"].isin(df_prod["Código"])]
     novos_ped = df_prod[~df_prod["Código"].isin(df_ped["Código"])]["Código"]
@@ -536,7 +518,6 @@ def sincronizar_tabelas():
         df_ped = pd.concat([df_ped, df_n_ped], ignore_index=True)
     st.session_state['df_pedidos'] = df_ped
     
-    # Sincroniza df_estoque
     df_est = st.session_state['df_estoque']
     df_est = df_est[df_est["Código"].isin(df_prod["Código"])]
     novos_est = df_prod[~df_prod["Código"].isin(df_est["Código"])]["Código"]
@@ -566,6 +547,7 @@ with st.sidebar:
             "Separação e Fechamento",
             "Visão das Lojas",
             "Visão Fornecedores (Ademilto)",
+            "Configurar Fornecedores",
             "Catálogo de Produtos"
         ])
     else:
@@ -585,7 +567,6 @@ with st.sidebar:
 # ROTA 1: SEPARAÇÃO E FECHAMENTO
 # ─────────────────────────────────────────────
 if perfil_navegacao == "Separação e Fechamento":
-
     st.markdown("""
     <div class="page-header" style="background: linear-gradient(90deg, var(--green-dark) 0%, #0d2018 100%); padding: 14px 20px; border-radius: 10px; margin-bottom: 22px;">
         <span style="font-size: 26px; margin-right: 12px;">📊</span>
@@ -597,14 +578,12 @@ if perfil_navegacao == "Separação e Fechamento":
     """, unsafe_allow_html=True)
 
     with st.container(border=True):
-        
         filtro_setor = st.radio("🔍 Filtrar Exibição por Setor:", ["Todos", "Box", "Pedra"], horizontal=True)
         st.write("<br>", unsafe_allow_html=True)
 
         df_base  = st.session_state['df_produtos'][["Código","Descrição","Tipo"]]
         df_final = pd.merge(df_base, st.session_state['df_pedidos'], on="Código")
         df_final["TOTAL GERAL"] = df_final[LOJAS].sum(axis=1)
-
         cols_order = ["Código", "Descrição", "Tipo"] + LOJAS + ["TOTAL GERAL", "R$Preço", "OBS:"]
         df_final = df_final[cols_order]
 
@@ -646,13 +625,7 @@ if perfil_navegacao == "Separação e Fechamento":
             df_csv = df_editado_admin.copy()
             df_csv = df_csv.rename(columns=MAPA_LOJAS)
             csv = df_csv.to_csv(index=False).encode("utf-8")
-            st.download_button(
-                label="⬇️ CSV",
-                data=csv,
-                file_name="separacao_semanal_flv.csv",
-                mime="text/csv",
-                use_container_width=True
-            )
+            st.download_button("⬇️ CSV", data=csv, file_name="separacao_semanal.csv", mime="text/csv", use_container_width=True)
             
         with col_excel:
             buffer = io.BytesIO()
@@ -665,14 +638,7 @@ if perfil_navegacao == "Separação e Fechamento":
                 cols_finais = ["Código", "Descrição", "Tipo"] + NOVOS_NOMES_LOJAS + [f"Análise {i}" for i in range(1, 7)] + ["TOTAL GERAL", "R$Preço", "OBS:"]
                 df_export = df_export[cols_finais]
                 df_export.to_excel(writer, index=False, sheet_name='Pedidos FLV')
-            
-            st.download_button(
-                label="⬇️ Excel",
-                data=buffer.getvalue(),
-                file_name="separacao_semanal_flv.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                use_container_width=True
-            )
+            st.download_button("⬇️ Excel", data=buffer.getvalue(), file_name="separacao_semanal.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True)
 
         with col_limpa:
             if st.button("🚨 Zerar Pedidos/Estoque", use_container_width=True):
@@ -688,7 +654,6 @@ if perfil_navegacao == "Separação e Fechamento":
 # ROTA 2: VISÃO DAS LOJAS
 # ─────────────────────────────────────────────
 elif perfil_navegacao == "Visão das Lojas":
-
     if acesso_total:
         loja_selecionada = st.selectbox("👁️ Visualizar como:", LOJAS)
     else:
@@ -714,20 +679,15 @@ elif perfil_navegacao == "Visão das Lojas":
             st.session_state['usuario_logado'] = None
             st.rerun()
 
-    df_visiveis = st.session_state['df_produtos'][
-        st.session_state['df_produtos'][loja_selecionada] == True
-    ]
+    df_visiveis = st.session_state['df_produtos'][st.session_state['df_produtos'][loja_selecionada] == True]
     df_loja = df_visiveis[["Código","Descrição","Tipo"]].copy()
-    
     df_est = st.session_state['df_estoque'][["Código", loja_selecionada]].rename(columns={loja_selecionada: "Estoque"})
     df_qtd = st.session_state['df_pedidos'][["Código", loja_selecionada]].rename(columns={loja_selecionada: "Qtde"})
-    
     df_loja = pd.merge(df_loja, df_est, on="Código", how="left")
     df_loja = pd.merge(df_loja, df_qtd, on="Código", how="left")
 
     with st.container(border=True):
         st.info("💡 **Dica:** Preencha primeiro o **Estoque** e depois a **Qtde** do pedido.")
-
         col_cfg_loja = {
             "Código":         st.column_config.NumberColumn(width=85, format="%d", disabled=True),
             "Descrição":      st.column_config.TextColumn(disabled=True),
@@ -735,7 +695,6 @@ elif perfil_navegacao == "Visão das Lojas":
             "Estoque":        st.column_config.NumberColumn("📦 Estoque", width=100, min_value=0, step=1),
             "Qtde":           st.column_config.NumberColumn("🛒 Qtde", width=100, min_value=0, step=1)
         }
-
         df_editado = st.data_editor(
             df_loja, column_config=col_cfg_loja,
             hide_index=True, use_container_width=True, height=520,
@@ -749,13 +708,9 @@ elif perfil_navegacao == "Visão das Lojas":
 
         st.divider()
         m1, m2, m3, _, col_btn = st.columns([2.5, 2.2, 1.8, 0.5, 3])
-
-        with m1:
-            st.metric("Itens preenchidos (Pedido)", f"{itens_com_pedido} / {total_itens}")
-        with m2:
-            st.metric("Total de unidades", total_unidades)
-        with m3:
-            st.metric("Cobertura", f"{pct}%")
+        with m1: st.metric("Itens preenchidos (Pedido)", f"{itens_com_pedido} / {total_itens}")
+        with m2: st.metric("Total de unidades", total_unidades)
+        with m3: st.metric("Cobertura", f"{pct}%")
         with col_btn:
             st.write("<br>", unsafe_allow_html=True)
             if st.button("💾 Salvar Pedido da Semana", type="primary", use_container_width=True):
@@ -769,7 +724,6 @@ elif perfil_navegacao == "Visão das Lojas":
 # ROTA 3: VISÃO FORNECEDORES (ADEMILTO)
 # ─────────────────────────────────────────────
 elif perfil_navegacao == "Visão Fornecedores (Ademilto)":
-
     st.markdown("""
     <div class="page-header" style="background: linear-gradient(90deg, var(--green-dark) 0%, #0d2018 100%); padding: 14px 20px; border-radius: 10px; margin-bottom: 22px;">
         <span style="font-size: 26px; margin-right: 12px;">🚚</span>
@@ -782,60 +736,136 @@ elif perfil_navegacao == "Visão Fornecedores (Ademilto)":
 
     df_base_produtos = st.session_state['df_produtos'][["Código", "Descrição"]]
     df_base_pedidos = st.session_state['df_pedidos']
-    
     df_base_pedidos["Total"] = df_base_pedidos[LOJAS].sum(axis=1)
 
     df_consolidado = pd.merge(df_base_produtos, df_base_pedidos[["Código", "Total", "R$Preço"]], on="Código", how="inner")
     
-    nomes_fornecedores = list(FORNECEDORES_MAP.keys())
+    # Pegamos os fornecedores dinâmicos da configuração
+    df_cfg = st.session_state['df_fornecedores_config']
+    nomes_fornecedores = df_cfg["Fornecedor"].unique()
     
-    # GAP="SMALL": Reduz o espaço entre as colunas para o card ganhar mais largura
     for i in range(0, len(nomes_fornecedores), 3):
         cols = st.columns(3, gap="small")
         for j, fornecedor in enumerate(nomes_fornecedores[i:i+3]):
-            codigos_do_fornecedor = FORNECEDORES_MAP[fornecedor]
+            codigos_do_fornecedor = df_cfg[df_cfg["Fornecedor"] == fornecedor]["Código"].tolist()
             
-            df_fornecedor = df_consolidado[df_consolidado["Código"].isin(codigos_do_fornecedor)].copy()
-            df_fornecedor = df_fornecedor.rename(columns={"Código": "Cód", "Descrição": "Produtos", "R$Preço": "R$ Preço"})
-            df_fornecedor["R$ Total"] = df_fornecedor["Total"] * df_fornecedor["R$ Preço"]
-            
-            df_exibicao = df_fornecedor[["Cód", "Produtos", "Total", "R$ Preço", "R$ Total"]].copy()
-
-            altura_dinamica = int((len(df_exibicao) + 1) * 36) + 5
-
             with cols[j]:
                 with st.container(border=True):
                     st.markdown(f"**🛒 {fornecedor}**")
                     
-                    # LARGURAS FIXAS EM PIXELS: Força todas as colunas a caberem sem criar a barra de rolagem horizontal
-                    col_cfg_forn = {
-                        "Cód": st.column_config.NumberColumn(width=45, disabled=True, format="%d"),
-                        "Produtos": st.column_config.TextColumn(width=110, disabled=True),
-                        "Total": st.column_config.NumberColumn("Total", width=50, disabled=False, format="%d"),
-                        "R$ Preço": st.column_config.NumberColumn("R$ Preço", width=65, format="R$ %.2f", disabled=False),
-                        "R$ Total": st.column_config.NumberColumn("R$ Total", width=65, format="R$ %.2f", disabled=True)
-                    }
+                    # ─── REGRA PARA FORNECEDORES ESPECIAIS (LINHA POR LOJA) ───
+                    if fornecedor in FORNECEDORES_ESPECIAIS_LINHA:
+                        df_ped_esp = df_base_pedidos[df_base_pedidos["Código"].isin(codigos_do_fornecedor)]
+                        
+                        dict_lojas = {"Visão": LOJAS + ["TOTAL"]}
+                        col_configs_especial = {"Visão": st.column_config.TextColumn("Visão", disabled=True)}
+                        
+                        for cod in codigos_do_fornecedor:
+                            desc_series = df_base_produtos[df_base_produtos["Código"] == cod]["Descrição"]
+                            desc = desc_series.values[0] if not desc_series.empty else "Prod"
+                            
+                            # Formata o cabeçalho p/ ficar CÓDIGO - PALAVRA CHAVE
+                            palavra = desc.split()[0]
+                            if "Melancia" in desc and len(desc.split()) > 1: palavra = desc.split()[1]
+                            elif "Banana" in desc and len(desc.split()) > 1: palavra = desc.split()[1]
+                            nome_col = f"{cod} - {palavra}"
+                            
+                            valores_lojas = []
+                            for loja in LOJAS:
+                                val = df_ped_esp[df_ped_esp["Código"] == cod][loja].values
+                                valores_lojas.append(int(val[0]) if len(val) > 0 else 0)
+                            
+                            # Adiciona soma na última linha (TOTAL)
+                            valores_lojas.append(sum(valores_lojas))
+                            dict_lojas[nome_col] = valores_lojas
+                            col_configs_especial[nome_col] = st.column_config.NumberColumn(nome_col, format="%d", disabled=True)
+                            
+                        df_especial = pd.DataFrame(dict_lojas)
+                        
+                        # Altura baseada nas 8 Lojas + 1 Linha de total = 9 linhas (+ cabeçalho)
+                        altura_esp = int((len(df_especial) + 1) * 36) + 5
+                        
+                        st.data_editor(
+                            df_especial, 
+                            hide_index=True, 
+                            use_container_width=True, 
+                            column_config=col_configs_especial,
+                            height=altura_esp,
+                            key=f"forn_esp_{fornecedor}_{st.session_state['reset_counter']}"
+                        )
                     
-                    df_forn_edit = st.data_editor(
-                        df_exibicao, 
-                        hide_index=True, 
-                        use_container_width=True, 
-                        column_config=col_cfg_forn,
-                        height=altura_dinamica,
-                        key=f"forn_{fornecedor}_{st.session_state['reset_counter']}"
-                    )
-                    
-                    soma_dinamica = (df_forn_edit["Total"] * df_forn_edit["R$ Preço"]).sum()
-                    
-                    st.markdown(f"""
-                        <div style="text-align:right; font-weight:700; margin-top:8px; color:var(--green-bright); font-size:16px;">
-                            Total Final: R$ {soma_dinamica:,.2f}
-                        </div>
-                    """, unsafe_allow_html=True)
+                    # ─── REGRA PARA FORNECEDORES NORMAIS ───
+                    else:
+                        df_fornecedor = df_consolidado[df_consolidado["Código"].isin(codigos_do_fornecedor)].copy()
+                        df_fornecedor = df_fornecedor.rename(columns={"Código": "Cód", "Descrição": "Produtos", "R$Preço": "R$ Preço"})
+                        df_fornecedor["R$ Total"] = df_fornecedor["Total"] * df_fornecedor["R$ Preço"]
+                        df_exibicao = df_fornecedor[["Cód", "Produtos", "Total", "R$ Preço", "R$ Total"]].copy()
+
+                        altura_dinamica = int((len(df_exibicao) + 1) * 36) + 5
+                        
+                        col_cfg_forn = {
+                            "Cód": st.column_config.NumberColumn(width=45, disabled=True, format="%d"),
+                            "Produtos": st.column_config.TextColumn(width=110, disabled=True),
+                            "Total": st.column_config.NumberColumn("Total", width=50, disabled=False, format="%d"),
+                            "R$ Preço": st.column_config.NumberColumn("R$ Preço", width=65, format="R$ %.2f", disabled=False),
+                            "R$ Total": st.column_config.NumberColumn("R$ Total", width=65, format="R$ %.2f", disabled=True)
+                        }
+                        
+                        df_forn_edit = st.data_editor(
+                            df_exibicao, 
+                            hide_index=True, 
+                            use_container_width=True, 
+                            column_config=col_cfg_forn,
+                            height=altura_dinamica,
+                            key=f"forn_{fornecedor}_{st.session_state['reset_counter']}"
+                        )
+                        
+                        soma_dinamica = (df_forn_edit["Total"] * df_forn_edit["R$ Preço"]).sum()
+                        
+                        st.markdown(f"""
+                            <div style="text-align:right; font-weight:700; margin-top:8px; color:var(--green-bright); font-size:16px;">
+                                Total Final: R$ {soma_dinamica:,.2f}
+                            </div>
+                        """, unsafe_allow_html=True)
         st.write("<br>", unsafe_allow_html=True)
 
 # ─────────────────────────────────────────────
-# ROTA 4: CATÁLOGO DE PRODUTOS
+# ROTA 4: CONFIGURAR FORNECEDORES (NOVA TELA)
+# ─────────────────────────────────────────────
+elif perfil_navegacao == "Configurar Fornecedores":
+    st.markdown("""
+    <div class="page-header" style="background: linear-gradient(90deg, var(--green-dark) 0%, #0d2018 100%); padding: 14px 20px; border-radius: 10px; margin-bottom: 22px;">
+        <span style="font-size: 26px; margin-right: 12px;">⚙️</span>
+        <div style="display: inline-block; vertical-align: top;">
+            <div style="font-size: 20px; font-weight: 700; color: var(--text-header);">Configuração de Fornecedores</div>
+            <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Adicione, edite ou remova os produtos associados a cada fornecedor</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    with st.container(border=True):
+        st.caption("Adicione linhas no final para novos produtos. Altere o nome do fornecedor para agrupar automaticamente.")
+        
+        col_cfg_setup = {
+            "Fornecedor": st.column_config.TextColumn("Nome do Fornecedor", required=True),
+            "Código": st.column_config.NumberColumn("Cód. Interno do Produto", required=True, format="%d")
+        }
+        
+        df_cfg_editado = st.data_editor(
+            st.session_state['df_fornecedores_config'],
+            num_rows="dynamic",
+            use_container_width=True,
+            column_config=col_cfg_setup,
+            height=600
+        )
+        
+        if st.button("💾 Salvar Estrutura de Fornecedores", type="primary"):
+            st.session_state['df_fornecedores_config'] = df_cfg_editado
+            st.success("Configuração de fornecedores salva! A visão Ademilto foi atualizada com sucesso.")
+            st.rerun()
+
+# ─────────────────────────────────────────────
+# ROTA 5: CATÁLOGO DE PRODUTOS
 # ─────────────────────────────────────────────
 elif perfil_navegacao == "Catálogo de Produtos":
 
