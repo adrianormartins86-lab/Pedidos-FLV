@@ -89,19 +89,20 @@ section[data-testid="stSidebar"] .stRadio label { font-size: 14px; }
     box-shadow: 0 0 0 3px var(--green-glow) !important;
 }
 
-/* ── Data Editor: cabeçalho verde escuro ── */
+/* ── Data Editor: cabeçalho verde escuro e fonte reduzida ── */
 [data-testid="stDataEditor"] [data-testid="glideDataEditor"] .gdg-header-cell,
 [data-testid="stDataEditor"] .dvn-stack .gdg-header {
     background-color: var(--green-dark) !important;
     color: var(--text-header) !important;
 }
 
-/* Wrapper da tabela */
+/* Ajuste do Data Editor para compactar a tabela */
 [data-testid="stDataEditor"] {
     border-radius: 10px !important;
     overflow: hidden;
     border: 1px solid var(--green-mid) !important;
     box-shadow: 0 4px 20px rgba(0,0,0,.4);
+    font-size: 12px !important; /* Fonte reduzida para caber nos prints */
 }
 
 /* ── Célula selecionada ── */
@@ -788,8 +789,9 @@ elif perfil_navegacao == "Visão Fornecedores (Ademilto)":
     
     nomes_fornecedores = list(FORNECEDORES_MAP.keys())
     
+    # GAP="SMALL": Reduz o espaço entre as colunas para o card ganhar mais largura
     for i in range(0, len(nomes_fornecedores), 3):
-        cols = st.columns(3)
+        cols = st.columns(3, gap="small")
         for j, fornecedor in enumerate(nomes_fornecedores[i:i+3]):
             codigos_do_fornecedor = FORNECEDORES_MAP[fornecedor]
             
@@ -799,19 +801,19 @@ elif perfil_navegacao == "Visão Fornecedores (Ademilto)":
             
             df_exibicao = df_fornecedor[["Cód", "Produtos", "Total", "R$ Preço", "R$ Total"]].copy()
 
-            # MÁGICA DA ALTURA AQUI: (qtd de linhas + 1 do cabeçalho) * ~36px de altura por linha + margem extra
             altura_dinamica = int((len(df_exibicao) + 1) * 36) + 5
 
             with cols[j]:
                 with st.container(border=True):
                     st.markdown(f"**🛒 {fornecedor}**")
                     
+                    # LARGURAS FIXAS EM PIXELS: Força todas as colunas a caberem sem criar a barra de rolagem horizontal
                     col_cfg_forn = {
-                        "Cód": st.column_config.NumberColumn(disabled=True, format="%d"),
-                        "Produtos": st.column_config.TextColumn(disabled=True),
-                        "Total": st.column_config.NumberColumn("Total", disabled=False, format="%d"),
-                        "R$ Preço": st.column_config.NumberColumn("R$ Preço", format="R$ %.2f", disabled=False),
-                        "R$ Total": st.column_config.NumberColumn("R$ Total", format="R$ %.2f", disabled=True)
+                        "Cód": st.column_config.NumberColumn(width=45, disabled=True, format="%d"),
+                        "Produtos": st.column_config.TextColumn(width=110, disabled=True),
+                        "Total": st.column_config.NumberColumn("Total", width=50, disabled=False, format="%d"),
+                        "R$ Preço": st.column_config.NumberColumn("R$ Preço", width=65, format="R$ %.2f", disabled=False),
+                        "R$ Total": st.column_config.NumberColumn("R$ Total", width=65, format="R$ %.2f", disabled=True)
                     }
                     
                     df_forn_edit = st.data_editor(
@@ -819,7 +821,7 @@ elif perfil_navegacao == "Visão Fornecedores (Ademilto)":
                         hide_index=True, 
                         use_container_width=True, 
                         column_config=col_cfg_forn,
-                        height=altura_dinamica, # <-- Define a altura baseada no tamanho exato do DataFrame
+                        height=altura_dinamica,
                         key=f"forn_{fornecedor}_{st.session_state['reset_counter']}"
                     )
                     
