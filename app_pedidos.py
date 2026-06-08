@@ -745,7 +745,6 @@ elif perfil_navegacao == "Visão Fornecedores (Ademilto)":
             <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Altere nomes, códigos e totais livremente antes de gerar seu print. Adicione ou remova linhas na própria tabela.</div>
         </div>
     </div>
-    <style>.title-input input { font-size:18px !important; font-weight: bold !important; color: #2ea043 !important; background: transparent !important; border: 1px dashed #21262d !important; padding: 2px !important; } .title-input input:focus { border: 1px dashed #2ea043 !important; } </style>
     """, unsafe_allow_html=True)
 
     df_base_produtos = st.session_state['df_produtos'][["Código", "Descrição"]]
@@ -757,9 +756,10 @@ elif perfil_navegacao == "Visão Fornecedores (Ademilto)":
     df_cfg = st.session_state['df_fornecedores_config']
     nomes_fornecedores = df_cfg["Fornecedor"].unique()
     
-    for i in range(0, len(nomes_fornecedores), 3):
-        cols = st.columns(3, gap="small")
-        for j, fornecedor in enumerate(nomes_fornecedores[i:i+3]):
+    # ─── AGORA COM 2 COLUNAS (st.columns(2)) ───
+    for i in range(0, len(nomes_fornecedores), 2):
+        cols = st.columns(2, gap="small")
+        for j, fornecedor in enumerate(nomes_fornecedores[i:i+2]):
             codigos_do_fornecedor = df_cfg[df_cfg["Fornecedor"] == fornecedor]["Código"].tolist()
             
             with cols[j]:
@@ -819,12 +819,13 @@ elif perfil_navegacao == "Visão Fornecedores (Ademilto)":
 
                         altura_dinamica = int((len(df_exibicao) + 2) * 36) + 5
                         
+                        # Removido os widths fixos pequenos para aproveitar melhor as 2 colunas mais largas
                         col_cfg_forn = {
-                            "Cód": st.column_config.NumberColumn(width=45, disabled=False, format="%d"),
-                            "Produtos": st.column_config.TextColumn(width=110, disabled=False),
-                            "Total": st.column_config.NumberColumn("Total", width=50, disabled=False, format="%d"),
-                            "R$ Preço": st.column_config.NumberColumn("R$ Preço", width=65, format="R$ %.2f", disabled=False),
-                            "R$ Total": st.column_config.NumberColumn("R$ Total", width=65, format="R$ %.2f", disabled=True)
+                            "Cód": st.column_config.NumberColumn(disabled=False, format="%d"),
+                            "Produtos": st.column_config.TextColumn(disabled=False),
+                            "Total": st.column_config.NumberColumn("Total", disabled=False, format="%d"),
+                            "R$ Preço": st.column_config.NumberColumn("R$ Preço", format="R$ %.2f", disabled=False),
+                            "R$ Total": st.column_config.NumberColumn("R$ Total", format="R$ %.2f", disabled=True)
                         }
                         
                         # Data editor TOTALMENTE destravado com adição de linhas livres
