@@ -569,7 +569,6 @@ with st.sidebar:
             "Separação e Fechamento",
             "Visão das Lojas",
             "Visão Fornecedores (Ademilto)",
-            "Configurar Fornecedores",
             "Catálogo de Produtos"
         ])
     else:
