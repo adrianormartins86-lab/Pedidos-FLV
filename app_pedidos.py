@@ -779,51 +779,39 @@ elif perfil_navegacao == "Visão Fornecedores (Ademilto)":
     </div>
     """, unsafe_allow_html=True)
 
-    # Preparar dados mestres para os cálculos
     df_base_produtos = st.session_state['df_produtos'][["Código", "Descrição"]]
     df_base_pedidos = st.session_state['df_pedidos']
     
-    # Calcular o total de todas as lojas para cada produto
     df_base_pedidos["Total"] = df_base_pedidos[LOJAS].sum(axis=1)
 
-    # Criar uma tabela cruzando as descrições e totais
     df_consolidado = pd.merge(df_base_produtos, df_base_pedidos[["Código", "Total", "R$Preço"]], on="Código", how="inner")
     
-    # Exibir cada fornecedor em uma grade (3 colunas por linha para ficar semelhante a uma planilha)
     nomes_fornecedores = list(FORNECEDORES_MAP.keys())
     
-    # Chunking os fornecedores em blocos de 3 para layout
     for i in range(0, len(nomes_fornecedores), 3):
         cols = st.columns(3)
         for j, fornecedor in enumerate(nomes_fornecedores[i:i+3]):
             codigos_do_fornecedor = FORNECEDORES_MAP[fornecedor]
             
-            # Filtra apenas os produtos do fornecedor atual
             df_fornecedor = df_consolidado[df_consolidado["Código"].isin(codigos_do_fornecedor)].copy()
-            
-            # O usuário pediu: "Cód, Produtos, Total, R$ Preço, R$ Total"
             df_fornecedor = df_fornecedor.rename(columns={"Código": "Cód", "Descrição": "Produtos", "R$Preço": "R$ Preço"})
-            
-            # Cálculo final R$ Total = Total * Preço
             df_fornecedor["R$ Total"] = df_fornecedor["Total"] * df_fornecedor["R$ Preço"]
             
-            # Formatação
             df_exibicao = df_fornecedor[["Cód", "Produtos", "Total", "R$ Preço", "R$ Total"]].copy()
 
-            soma_total = float(df_exibicao["R$ Total"].sum())
+            # MÁGICA DA ALTURA AQUI: (qtd de linhas + 1 do cabeçalho) * ~36px de altura por linha + margem extra
+            altura_dinamica = int((len(df_exibicao) + 1) * 36) + 5
 
             with cols[j]:
                 with st.container(border=True):
                     st.markdown(f"**🛒 {fornecedor}**")
                     
-                    # Colocamos no data_editor para permitir a edição futura conforme você pediu.
-                    # As colunas "Cód", "Produtos" são travadas. O Total pode ficar travado ou não. 
                     col_cfg_forn = {
                         "Cód": st.column_config.NumberColumn(disabled=True, format="%d"),
                         "Produtos": st.column_config.TextColumn(disabled=True),
-                        "Total": st.column_config.NumberColumn("Total", disabled=False, format="%d"), # Deixei editável pro futuro
-                        "R$ Preço": st.column_config.NumberColumn("R$ Preço", format="R$ %.2f", disabled=False), # Deixei editável pro futuro
-                        "R$ Total": st.column_config.NumberColumn("R$ Total", format="R$ %.2f", disabled=True) # Cálculo travado
+                        "Total": st.column_config.NumberColumn("Total", disabled=False, format="%d"),
+                        "R$ Preço": st.column_config.NumberColumn("R$ Preço", format="R$ %.2f", disabled=False),
+                        "R$ Total": st.column_config.NumberColumn("R$ Total", format="R$ %.2f", disabled=True)
                     }
                     
                     df_forn_edit = st.data_editor(
@@ -831,10 +819,10 @@ elif perfil_navegacao == "Visão Fornecedores (Ademilto)":
                         hide_index=True, 
                         use_container_width=True, 
                         column_config=col_cfg_forn,
+                        height=altura_dinamica, # <-- Define a altura baseada no tamanho exato do DataFrame
                         key=f"forn_{fornecedor}_{st.session_state['reset_counter']}"
                     )
                     
-                    # Como é interativo, recalculamos a soma se a pessoa mexer na hora
                     soma_dinamica = (df_forn_edit["Total"] * df_forn_edit["R$ Preço"]).sum()
                     
                     st.markdown(f"""
