@@ -199,7 +199,7 @@ div[data-testid="stVerticalBlockBorderWrapper"]:hover {
 """, unsafe_allow_html=True)
 
 # ─────────────────────────────────────────────
-# CONSTANTES E MAPEAMENTO DE LOJAS
+# CONSTANTES E MAPEAMENTO DE LOJAS E PRODUTOS
 # ─────────────────────────────────────────────
 LOJAS = ["Loja 01", "Loja 02", "Loja 03", "Loja 04", "Loja 05", "Loja 06", "Loja 07", "Loja 08"]
 NOVOS_NOMES_LOJAS = ["291", "292", "293", "294", "295", "296", "297", "298"]
@@ -207,119 +207,7 @@ MAPA_LOJAS = dict(zip(LOJAS, NOVOS_NOMES_LOJAS))
 
 FORNECEDORES_ESPECIAIS_LINHA = ["BANANA SANTOME", "MELANCIA CARLIN", "MELANCIA MARCINHO", "RODRIGO BATATA"]
 
-# ─────────────────────────────────────────────
-# MAPA INICIAL DINÂMICO DE FORNECEDORES
-# ─────────────────────────────────────────────
-if 'df_fornecedores_config' not in st.session_state:
-    mapa_inicial = {
-        "NIDE": [45, 49, 67, 57, 46, 48, 47], "Claudir Mendes": [57, 46, 49], "SANDRO": [75],
-        "DENIZE": [45, 49, 67, 57, 46, 48, 47, 41, 52, 69, 56], "JOVANO": [1746, 88, 49, 140, 85],
-        "JEFINHO": [85, 140, 256, 267, 88, 57, 45, 49, 1662, 46], "LUCIANO": [61, 41, 49, 56, 45],
-        "THIAGO": [61, 91, 67, 74, 49, 52, 45, 56], "CRISTIAN": [40, 949, 42, 83, 68, 538, 78],
-        "ROGERIO NARANTE": [538], "FERNANDO NARANTE": [46], "SILVIO MAND SALSA": [76],
-        "HORTA": [108, 109], "GLAUCIA MACIEL": [84, 85], "ALEMÃO": [39], "RENAN SS": [72],
-        "NEGUIN": [85, 86, 88, 61, 45], "RODRIGO CHANAN": [85, 86, 88, 61, 1662, 140],
-        "MARCELO MORANGO": [58], "JOÃO BATISTA": [79, 60, 56, 1662, 69], "GIACOMELLO": [95],
-        "PRIMO": [240, 86, 49, 45, 88, 85], "RENATO MANDIOCA": [75], "THIAGO SERRA": [91, 49, 45, 56, 61],
-        "TICO": [236, 237, 707, 2730, 42, 581, 78, 546, 80, 83, 540, 949, 40, 110, 68, 109],
-        "ALGACIR": [1516, 53], "MAURICIO": [62], "PAULO IGASHIBAHI": [47, 48],
-        "GILSOM BATATA": [508, 551], "DORI BATATA": [508, 551], "BANANA SANTOME": [2567, 2569, 2568],
-        "MELANCIA CARLIN": [1], "MELANCIA MARCINHO": [673, 1, 3003], "RODRIGO BATATA": [508]
-    }
-    lista_cfg = []
-    for f, cods in mapa_inicial.items():
-        for c in cods:
-            lista_cfg.append({"Fornecedor": f, "Código": c})
-    st.session_state['df_fornecedores_config'] = pd.DataFrame(lista_cfg)
-
-# Controle de estado visual
-if 'reset_counter' not in st.session_state:
-    st.session_state['reset_counter'] = 0
-
-# ─────────────────────────────────────────────
-# SISTEMA DE LOGIN
-# ─────────────────────────────────────────────
-if 'usuario_logado' not in st.session_state:
-    st.session_state['usuario_logado'] = None
-
-if st.session_state['usuario_logado'] is None:
-    st.write("<br><br>", unsafe_allow_html=True)
-    _, col2, _ = st.columns([1, 1.4, 1])
-
-    with col2:
-        with st.container(border=True):
-            h1, h2 = st.columns([4, 1])
-            with h1:
-                st.markdown("""
-                    <h2 style='margin-bottom:0'>Portal de Pedidos</h2>
-                    <p style='color:#7d8590;font-size:14px;margin-top:4px'>FLV Normal — Molicenter</p>
-                """, unsafe_allow_html=True)
-            with h2:
-                st.write("")
-                try:
-                    st.image("passaro_logo.png", width=60)
-                except Exception:
-                    st.markdown("🐦", unsafe_allow_html=True)
-
-            st.divider()
-
-            usuarios_permitidos = ["Selecione..."] + ["Administrador"] + LOJAS
-            usuario_selecionado = st.selectbox("👤 Usuário de acesso:", usuarios_permitidos)
-            senha_digitada = st.text_input("🔑 Senha de acesso:", type="password")
-
-            st.write("<br>", unsafe_allow_html=True)
-
-            if st.button("Entrar no Sistema", type="primary", use_container_width=True):
-                if usuario_selecionado == "Selecione...":
-                    st.error("⚠️ Por favor, selecione um usuário.")
-                elif usuario_selecionado == "Administrador" and senha_digitada == "moli0000":
-                    st.session_state['usuario_logado'] = usuario_selecionado
-                    st.rerun()
-                elif usuario_selecionado in LOJAS and senha_digitada == "moli1234":
-                    st.session_state['usuario_logado'] = usuario_selecionado
-                    st.rerun()
-                elif senha_digitada:
-                    st.error("⚠️ Senha incorreta. Tente novamente.")
-
-            st.markdown('<p style="font-size: 11px; color: #7d8590; text-align: center; margin-top: 10px;">🔒 Acesso restrito — Molicenter © 2026</p>', unsafe_allow_html=True)
-    st.stop()
-
-# ─────────────────────────────────────────────
-# ESTADO E DADOS INICIAIS
-# ─────────────────────────────────────────────
-usuario_atual = st.session_state['usuario_logado']
-acesso_total  = usuario_atual == "Administrador"
-
-if not acesso_total:
-    st.markdown("""
-    <script>
-        document.body.classList.add('sidebar-hidden');
-        const root = window.parent.document.querySelector('.stApp');
-        if (root) root.classList.add('sidebar-hidden');
-    </script>
-    <style>
-        section[data-testid="stSidebar"] { display: none !important; }
-        [data-testid="collapsedControl"]  { display: none !important; }
-        .main .block-container {
-            max-width: 100% !important;
-            padding-left: 2.5rem !important;
-            padding-right: 2.5rem !important;
-        }
-    </style>
-    """, unsafe_allow_html=True)
-
-limpar_cache = False
-if 'df_pedidos' in st.session_state:
-    if any(l not in st.session_state['df_pedidos'].columns for l in LOJAS):
-        limpar_cache = True
-if 'df_estoque' in st.session_state:
-    if any(l not in st.session_state['df_estoque'].columns for l in LOJAS):
-        limpar_cache = True
-
-if limpar_cache:
-    for k in ('df_pedidos', 'df_produtos', 'df_estoque'):
-        st.session_state.pop(k, None)
-
+# Se os produtos ainda não estiverem na sessão, carregamos eles PRIMEIRO
 if 'df_produtos' not in st.session_state:
     produtos_iniciais = [
         {"Código": 1571, "Descrição": "Abacate Cx 20 Kg", "Tipo": "Box"},
@@ -498,6 +386,129 @@ if 'df_produtos' not in st.session_state:
     for loja in LOJAS:
         df_init[loja] = True
     st.session_state['df_produtos'] = df_init
+
+# Agora criamos a lista de todos os Nomes de Produtos para usar no Selectbox
+LISTA_NOMES_PRODUTOS = st.session_state['df_produtos']['Descrição'].tolist()
+
+# ─────────────────────────────────────────────
+# MAPA INICIAL DINÂMICO DE FORNECEDORES (AGORA BASEADO NO NOME DO PRODUTO)
+# ─────────────────────────────────────────────
+if 'df_fornecedores_config' not in st.session_state:
+    mapa_inicial_codigos = {
+        "NIDE": [45, 49, 67, 57, 46, 48, 47], "Claudir Mendes": [57, 46, 49], "SANDRO": [75],
+        "DENIZE": [45, 49, 67, 57, 46, 48, 47, 41, 52, 69, 56], "JOVANO": [1746, 88, 49, 140, 85],
+        "JEFINHO": [85, 140, 256, 267, 88, 57, 45, 49, 1662, 46], "LUCIANO": [61, 41, 49, 56, 45],
+        "THIAGO": [61, 91, 67, 74, 49, 52, 45, 56], "CRISTIAN": [40, 949, 42, 83, 68, 538, 78],
+        "ROGERIO NARANTE": [538], "FERNANDO NARANTE": [46], "SILVIO MAND SALSA": [76],
+        "HORTA": [108, 109], "GLAUCIA MACIEL": [84, 85], "ALEMÃO": [39], "RENAN SS": [72],
+        "NEGUIN": [85, 86, 88, 61, 45], "RODRIGO CHANAN": [85, 86, 88, 61, 1662, 140],
+        "MARCELO MORANGO": [58], "JOÃO BATISTA": [79, 60, 56, 1662, 69], "GIACOMELLO": [95],
+        "PRIMO": [240, 86, 49, 45, 88, 85], "RENATO MANDIOCA": [75], "THIAGO SERRA": [91, 49, 45, 56, 61],
+        "TICO": [236, 237, 707, 2730, 42, 581, 78, 546, 80, 83, 540, 949, 40, 110, 68, 109],
+        "ALGACIR": [1516, 53], "MAURICIO": [62], "PAULO IGASHIBAHI": [47, 48],
+        "GILSOM BATATA": [508, 551], "DORI BATATA": [508, 551], "BANANA SANTOME": [2567, 2569, 2568],
+        "MELANCIA CARLIN": [1], "MELANCIA MARCINHO": [673, 1, 3003], "RODRIGO BATATA": [508]
+    }
+    
+    lista_cfg = []
+    # Converte a lista de códigos para a Descrição correspondente
+    for f, cods in mapa_inicial_codigos.items():
+        for c in cods:
+            # Puxa o nome exato do produto a partir do código
+            desc_match = st.session_state['df_produtos'][st.session_state['df_produtos']['Código'] == c]['Descrição']
+            if not desc_match.empty:
+                desc = desc_match.values[0]
+                lista_cfg.append({"Fornecedor": f, "Produto": desc})
+                
+    st.session_state['df_fornecedores_config'] = pd.DataFrame(lista_cfg)
+
+# Controle de estado visual
+if 'reset_counter' not in st.session_state:
+    st.session_state['reset_counter'] = 0
+
+# ─────────────────────────────────────────────
+# SISTEMA DE LOGIN
+# ─────────────────────────────────────────────
+if 'usuario_logado' not in st.session_state:
+    st.session_state['usuario_logado'] = None
+
+if st.session_state['usuario_logado'] is None:
+    st.write("<br><br>", unsafe_allow_html=True)
+    _, col2, _ = st.columns([1, 1.4, 1])
+
+    with col2:
+        with st.container(border=True):
+            h1, h2 = st.columns([4, 1])
+            with h1:
+                st.markdown("""
+                    <h2 style='margin-bottom:0'>Portal de Pedidos</h2>
+                    <p style='color:#7d8590;font-size:14px;margin-top:4px'>FLV Normal — Molicenter</p>
+                """, unsafe_allow_html=True)
+            with h2:
+                st.write("")
+                try:
+                    st.image("passaro_logo.png", width=60)
+                except Exception:
+                    st.markdown("🐦", unsafe_allow_html=True)
+
+            st.divider()
+
+            usuarios_permitidos = ["Selecione..."] + ["Administrador"] + LOJAS
+            usuario_selecionado = st.selectbox("👤 Usuário de acesso:", usuarios_permitidos)
+            senha_digitada = st.text_input("🔑 Senha de acesso:", type="password")
+
+            st.write("<br>", unsafe_allow_html=True)
+
+            if st.button("Entrar no Sistema", type="primary", use_container_width=True):
+                if usuario_selecionado == "Selecione...":
+                    st.error("⚠️ Por favor, selecione um usuário.")
+                elif usuario_selecionado == "Administrador" and senha_digitada == "moli0000":
+                    st.session_state['usuario_logado'] = usuario_selecionado
+                    st.rerun()
+                elif usuario_selecionado in LOJAS and senha_digitada == "moli1234":
+                    st.session_state['usuario_logado'] = usuario_selecionado
+                    st.rerun()
+                elif senha_digitada:
+                    st.error("⚠️ Senha incorreta. Tente novamente.")
+
+            st.markdown('<p style="font-size: 11px; color: #7d8590; text-align: center; margin-top: 10px;">🔒 Acesso restrito — Molicenter © 2026</p>', unsafe_allow_html=True)
+    st.stop()
+
+# ─────────────────────────────────────────────
+# DEMAIS INICIALIZAÇÕES
+# ─────────────────────────────────────────────
+usuario_atual = st.session_state['usuario_logado']
+acesso_total  = usuario_atual == "Administrador"
+
+if not acesso_total:
+    st.markdown("""
+    <script>
+        document.body.classList.add('sidebar-hidden');
+        const root = window.parent.document.querySelector('.stApp');
+        if (root) root.classList.add('sidebar-hidden');
+    </script>
+    <style>
+        section[data-testid="stSidebar"] { display: none !important; }
+        [data-testid="collapsedControl"]  { display: none !important; }
+        .main .block-container {
+            max-width: 100% !important;
+            padding-left: 2.5rem !important;
+            padding-right: 2.5rem !important;
+        }
+    </style>
+    """, unsafe_allow_html=True)
+
+limpar_cache = False
+if 'df_pedidos' in st.session_state:
+    if any(l not in st.session_state['df_pedidos'].columns for l in LOJAS):
+        limpar_cache = True
+if 'df_estoque' in st.session_state:
+    if any(l not in st.session_state['df_estoque'].columns for l in LOJAS):
+        limpar_cache = True
+
+if limpar_cache:
+    for k in ('df_pedidos', 'df_produtos', 'df_estoque'):
+        st.session_state.pop(k, None)
 
 if 'df_pedidos' not in st.session_state:
     df_p = pd.DataFrame(columns=["Código"] + LOJAS + ["R$Preço", "OBS:"])
@@ -756,21 +767,20 @@ elif perfil_navegacao == "Visão Fornecedores (Ademilto)":
     df_cfg = st.session_state['df_fornecedores_config']
     nomes_fornecedores = df_cfg["Fornecedor"].unique()
     
-    # ─── AGORA COM 2 COLUNAS (st.columns(2)) ───
     for i in range(0, len(nomes_fornecedores), 2):
         cols = st.columns(2, gap="small")
         for j, fornecedor in enumerate(nomes_fornecedores[i:i+2]):
-            codigos_do_fornecedor = df_cfg[df_cfg["Fornecedor"] == fornecedor]["Código"].tolist()
+            # Aqui traduzimos a descrição de volta para o código
+            descricoes_fornecedor = df_cfg[df_cfg["Fornecedor"] == fornecedor]["Produto"].tolist()
+            codigos_do_fornecedor = df_base_produtos[df_base_produtos["Descrição"].isin(descricoes_fornecedor)]["Código"].tolist()
             
             with cols[j]:
                 with st.container(border=True):
                     
-                    # 1. TÍTULO DO FORNECEDOR EDITÁVEL
                     st.markdown('<div class="title-input">', unsafe_allow_html=True)
                     st.text_input("Fornecedor", value=f"🛒 {fornecedor}", label_visibility="collapsed", key=f"title_{fornecedor}_{st.session_state['reset_counter']}")
                     st.markdown('</div>', unsafe_allow_html=True)
                     
-                    # ─── REGRA PARA FORNECEDORES ESPECIAIS (LINHA POR LOJA) ───
                     if fornecedor in FORNECEDORES_ESPECIAIS_LINHA:
                         df_ped_esp = df_base_pedidos[df_base_pedidos["Código"].isin(codigos_do_fornecedor)]
                         
@@ -781,7 +791,6 @@ elif perfil_navegacao == "Visão Fornecedores (Ademilto)":
                             desc_series = df_base_produtos[df_base_produtos["Código"] == cod]["Descrição"]
                             desc = desc_series.values[0] if not desc_series.empty else "Prod"
                             
-                            # Pega as 2 primeiras palavras para abreviar
                             partes = desc.split()
                             palavra = " ".join(partes[:2]) if len(partes) > 1 else desc
                             nome_col = f"{cod} - {palavra}"
@@ -799,7 +808,6 @@ elif perfil_navegacao == "Visão Fornecedores (Ademilto)":
                         
                         altura_esp = int((len(df_especial) + 2) * 36) + 5
                         
-                        # Data editor TOTALMENTE destravado, sem R$ Preço e sem Total Final.
                         st.data_editor(
                             df_especial, 
                             hide_index=True, 
@@ -810,7 +818,6 @@ elif perfil_navegacao == "Visão Fornecedores (Ademilto)":
                             key=f"forn_esp_{fornecedor}_{st.session_state['reset_counter']}"
                         )
                     
-                    # ─── REGRA PARA FORNECEDORES NORMAIS ───
                     else:
                         df_fornecedor = df_consolidado[df_consolidado["Código"].isin(codigos_do_fornecedor)].copy()
                         df_fornecedor = df_fornecedor.rename(columns={"Código": "Cód", "Descrição": "Produtos", "R$Preço": "R$ Preço"})
@@ -819,7 +826,6 @@ elif perfil_navegacao == "Visão Fornecedores (Ademilto)":
 
                         altura_dinamica = int((len(df_exibicao) + 2) * 36) + 5
                         
-                        # Removido os widths fixos pequenos para aproveitar melhor as 2 colunas mais largas
                         col_cfg_forn = {
                             "Cód": st.column_config.NumberColumn(disabled=False, format="%d"),
                             "Produtos": st.column_config.TextColumn(disabled=False),
@@ -828,7 +834,6 @@ elif perfil_navegacao == "Visão Fornecedores (Ademilto)":
                             "R$ Total": st.column_config.NumberColumn("R$ Total", format="R$ %.2f", disabled=True)
                         }
                         
-                        # Data editor TOTALMENTE destravado com adição de linhas livres
                         df_forn_edit = st.data_editor(
                             df_exibicao, 
                             hide_index=True, 
@@ -857,17 +862,18 @@ elif perfil_navegacao == "Configurar Fornecedores":
         <span style="font-size: 26px; margin-right: 12px;">⚙️</span>
         <div style="display: inline-block; vertical-align: top;">
             <div style="font-size: 20px; font-weight: 700; color: var(--text-header);">Configuração de Fornecedores</div>
-            <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Adicione, edite ou remova os produtos associados a cada fornecedor</div>
+            <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Selecione os produtos do catálogo oficial e agrupe-os por fornecedor.</div>
         </div>
     </div>
     """, unsafe_allow_html=True)
 
     with st.container(border=True):
-        st.caption("Adicione linhas no final para novos produtos. Altere o nome do fornecedor para agrupar automaticamente.")
+        st.caption("Ao adicionar uma nova linha, clique na coluna 'Produto' para selecionar na lista oficial.")
         
+        # A MÁGICA DO SELECTBOX ESTÁ AQUI
         col_cfg_setup = {
             "Fornecedor": st.column_config.TextColumn("Nome do Fornecedor", required=True),
-            "Código": st.column_config.NumberColumn("Cód. Interno do Produto", required=True, format="%d")
+            "Produto": st.column_config.SelectboxColumn("Selecione o Produto", options=LISTA_NOMES_PRODUTOS, required=True)
         }
         
         df_cfg_editado = st.data_editor(
