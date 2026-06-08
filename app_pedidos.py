@@ -188,6 +188,8 @@ div[data-testid="stVerticalBlockBorderWrapper"]:hover {
 # CONSTANTES
 # ─────────────────────────────────────────────
 LOJAS = ["Loja 01", "Loja 02", "Loja 03", "Loja 04", "Loja 05", "Loja 06", "Loja 07", "Loja 08"]
+NOVOS_NOMES_LOJAS = ["291", "292", "293", "294", "295", "296", "297", "298"]
+MAPA_LOJAS = dict(zip(LOJAS, NOVOS_NOMES_LOJAS))
 
 # ─────────────────────────────────────────────
 # SISTEMA DE LOGIN
@@ -558,13 +560,14 @@ if perfil_navegacao == "Separação e Fechamento":
         df_final = pd.merge(df_base, st.session_state['df_pedidos'], on="Código")
         df_final["TOTAL GERAL"] = df_final[LOJAS].sum(axis=1)
 
-        # Ordenar para garantir que Preço e OBS fiquem no final
+        # Ordenar para garantir a estrutura correta na tela
         cols_order = ["Código", "Descrição", "Tipo"] + LOJAS + ["TOTAL GERAL", "R$Preço", "OBS:"]
         df_final = df_final[cols_order]
 
         if filtro_setor != "Todos":
             df_final = df_final[df_final["Tipo"] == filtro_setor].reset_index(drop=True)
 
+        # Mapeando a configuração das colunas para exibir os cabeçalhos das lojas alterados (291 a 298)
         col_cfg = {
             "Código":      st.column_config.NumberColumn(width=80, format="%d", disabled=True),
             "Descrição":   st.column_config.TextColumn(disabled=True),
@@ -573,8 +576,8 @@ if perfil_navegacao == "Separação e Fechamento":
             "R$Preço":     st.column_config.NumberColumn("R$ Preço", width=100, format="R$ %.2f", min_value=0.0, step=0.01),
             "OBS:":        st.column_config.TextColumn("OBS:", width=200)
         }
-        for loja in LOJAS:
-            col_cfg[loja] = st.column_config.NumberColumn(loja, format="%d", min_value=0, step=1)
+        for loja, novo_nome in MAPA_LOJAS.items():
+            col_cfg[loja] = st.column_config.NumberColumn(novo_nome, format="%d", min_value=0, step=1)
 
         df_editado_admin = st.data_editor(
             df_final, hide_index=True, use_container_width=True,
@@ -591,7 +594,6 @@ if perfil_navegacao == "Separação e Fechamento":
                     for loja in LOJAS:
                         st.session_state['df_pedidos'].loc[mask, loja] = row[loja]
                     
-                    # Salva também o Preço e a Observação
                     st.session_state['df_pedidos'].loc[mask, "R$Preço"] = row["R$Preço"]
                     st.session_state['df_pedidos'].loc[mask, "OBS:"] = row["OBS:"]
                     
@@ -599,7 +601,10 @@ if perfil_navegacao == "Separação e Fechamento":
                 st.rerun()
 
         with col_csv:
-            csv = df_editado_admin.to_csv(index=False).encode("utf-8")
+            # Exportação de CSV também com cabeçalhos atualizados
+            df_csv = df_editado_admin.copy()
+            df_csv = df_csv.rename(columns=MAPA_LOJAS)
+            csv = df_csv.to_csv(index=False).encode("utf-8")
             st.download_button(
                 label="⬇️ CSV",
                 data=csv,
@@ -611,7 +616,22 @@ if perfil_navegacao == "Separação e Fechamento":
         with col_excel:
             buffer = io.BytesIO()
             with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
-                df_editado_admin.to_excel(writer, index=False, sheet_name='Pedidos FLV')
+                # Cria cópia para estruturar a planilha
+                df_export = df_editado_admin.copy()
+                
+                # 1. Renomeia os cabeçalhos das lojas (Loja 01 -> 291, etc)
+                df_export = df_export.rename(columns=MAPA_LOJAS)
+                
+                # 2. Insere as 6 colunas vazias de análise EXATAMENTE entre a última loja (298) e o TOTAL GERAL
+                idx_ultima_loja = df_export.columns.get_loc('298')
+                for i in range(1, 7):
+                    df_export.insert(idx_ultima_loja + i, f"Análise {i}", "")
+                
+                # Reordenando para garantir a integridade da sequência final desejada
+                cols_finais = ["Código", "Descrição", "Tipo"] + NOVOS_NOMES_LOJAS + [f"Análise {i}" for i in range(1, 7)] + ["TOTAL GERAL", "R$Preço", "OBS:"]
+                df_export = df_export[cols_finais]
+                
+                df_export.to_excel(writer, index=False, sheet_name='Pedidos FLV')
             
             st.download_button(
                 label="⬇️ Excel",
@@ -622,7 +642,6 @@ if perfil_navegacao == "Separação e Fechamento":
             )
 
         with col_limpa:
-            # Botão modificado para limpar o Pedido, Estoque, Preços e Observações simultaneamente
             if st.button("🚨 Zerar Pedidos/Estoque", use_container_width=True):
                 st.session_state['df_pedidos'][LOJAS] = 0
                 st.session_state['df_pedidos']["R$Preço"] = 0.0
@@ -643,12 +662,14 @@ elif perfil_navegacao == "Visão das Lojas":
 
     col_info, col_logout = st.columns([8, 2])
     with col_info:
+        # Exibe o número de identificação correspondente na barra superior da loja
+        id_loja = MAPA_LOJAS.get(loja_selecionada, loja_selecionada)
         st.markdown(f"""
         <div class="topbar-loja">
             <div class="topbar-left">
                 <span style="font-size:22px">📋</span>
                 <div>
-                    <div class="topbar-title">{loja_selecionada} — FLV Normal</div>
+                    <div class="topbar-title">{loja_selecionada} ({id_loja}) — FLV Normal</div>
                     <div class="topbar-sub">Preencha o estoque atual e a quantidade necessária para o pedido</div>
                 </div>
             </div>
@@ -660,17 +681,14 @@ elif perfil_navegacao == "Visão das Lojas":
             st.session_state['usuario_logado'] = None
             st.rerun()
 
-    # 1. Filtra os produtos permitidos
     df_visiveis = st.session_state['df_produtos'][
         st.session_state['df_produtos'][loja_selecionada] == True
     ]
     df_loja = df_visiveis[["Código","Descrição","Tipo"]].copy()
     
-    # 2. Prepara colunas de Estoque e Qtde para a loja selecionada
     df_est = st.session_state['df_estoque'][["Código", loja_selecionada]].rename(columns={loja_selecionada: "Estoque"})
     df_qtd = st.session_state['df_pedidos'][["Código", loja_selecionada]].rename(columns={loja_selecionada: "Qtde"})
     
-    # 3. Faz o merge de tudo
     df_loja = pd.merge(df_loja, df_est, on="Código", how="left")
     df_loja = pd.merge(df_loja, df_qtd, on="Código", how="left")
 
@@ -709,7 +727,6 @@ elif perfil_navegacao == "Visão das Lojas":
             if st.button("💾 Salvar Pedido da Semana", type="primary", use_container_width=True):
                 for _, row in df_editado.iterrows():
                     mask = st.session_state['df_pedidos']["Código"] == row["Código"]
-                    # Salva as duas informações em suas respectivas tabelas
                     st.session_state['df_pedidos'].loc[mask, loja_selecionada] = row["Qtde"]
                     st.session_state['df_estoque'].loc[mask, loja_selecionada] = row["Estoque"]
                 st.success(f"✅ Estoque e Pedido da {loja_selecionada} salvos com sucesso!")
