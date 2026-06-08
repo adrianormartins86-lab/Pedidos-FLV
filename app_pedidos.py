@@ -552,6 +552,28 @@ def sincronizar_tabelas():
 sincronizar_tabelas()
 
 # ─────────────────────────────────────────────
+# FUNÇÃO MODAL DE CONFIRMAÇÃO PARA ZERAR
+# ─────────────────────────────────────────────
+@st.dialog("🚨 Confirmação Necessária")
+def modal_zerar_estoque_pedidos():
+    st.markdown("Tem certeza que deseja **zerar todos os pedidos e o estoque** de todas as lojas?")
+    st.markdown("⚠️ *Esta ação limpará também os preços e observações e não poderá ser desfeita.*")
+    
+    st.write("<br>", unsafe_allow_html=True)
+    c1, c2 = st.columns(2)
+    with c1:
+        if st.button("❌ Não, cancelar", use_container_width=True):
+            st.rerun()
+    with c2:
+        if st.button("✔️ Sim, zerar tudo", type="primary", use_container_width=True):
+            st.session_state['reset_counter'] += 1
+            st.session_state['df_pedidos'][LOJAS] = 0
+            st.session_state['df_pedidos']["R$Preço"] = 0.0
+            st.session_state['df_pedidos']["OBS:"] = ""
+            st.session_state['df_estoque'][LOJAS] = 0
+            st.rerun()
+
+# ─────────────────────────────────────────────
 # SIDEBAR
 # ─────────────────────────────────────────────
 with st.sidebar:
@@ -663,13 +685,7 @@ if perfil_navegacao == "Separação e Fechamento":
 
         with col_limpa:
             if st.button("🚨 Zerar Pedidos/Estoque", use_container_width=True):
-                st.session_state['reset_counter'] += 1
-                st.session_state['df_pedidos'][LOJAS] = 0
-                st.session_state['df_pedidos']["R$Preço"] = 0.0
-                st.session_state['df_pedidos']["OBS:"] = ""
-                st.session_state['df_estoque'][LOJAS] = 0
-                st.success("✅ Tabelas de pedidos, estoque, preços e observações zeradas!")
-                st.rerun()
+                modal_zerar_estoque_pedidos()
 
 # ─────────────────────────────────────────────
 # ROTA 2: VISÃO DAS LOJAS
