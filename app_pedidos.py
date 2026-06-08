@@ -387,7 +387,7 @@ if 'df_produtos' not in st.session_state:
         df_init[loja] = True
     st.session_state['df_produtos'] = df_init
 
-# Agora criamos a lista de todos os Nomes de Produtos para usar no Selectbox
+# Criamos a lista de todos os Nomes de Produtos para usar nos Selectbox
 LISTA_NOMES_PRODUTOS = st.session_state['df_produtos']['Descrição'].tolist()
 
 # ─────────────────────────────────────────────
@@ -411,10 +411,8 @@ if 'df_fornecedores_config' not in st.session_state:
     }
     
     lista_cfg = []
-    # Converte a lista de códigos para a Descrição correspondente
     for f, cods in mapa_inicial_codigos.items():
         for c in cods:
-            # Puxa o nome exato do produto a partir do código
             desc_match = st.session_state['df_produtos'][st.session_state['df_produtos']['Código'] == c]['Descrição']
             if not desc_match.empty:
                 desc = desc_match.values[0]
@@ -770,7 +768,6 @@ elif perfil_navegacao == "Visão Fornecedores (Ademilto)":
     for i in range(0, len(nomes_fornecedores), 2):
         cols = st.columns(2, gap="small")
         for j, fornecedor in enumerate(nomes_fornecedores[i:i+2]):
-            # Aqui traduzimos a descrição de volta para o código
             descricoes_fornecedor = df_cfg[df_cfg["Fornecedor"] == fornecedor]["Produto"].tolist()
             codigos_do_fornecedor = df_base_produtos[df_base_produtos["Descrição"].isin(descricoes_fornecedor)]["Código"].tolist()
             
@@ -826,9 +823,10 @@ elif perfil_navegacao == "Visão Fornecedores (Ademilto)":
 
                         altura_dinamica = int((len(df_exibicao) + 2) * 36) + 5
                         
+                        # ─── AQUI A MÁGICA DO SELECTBOX PARA OS FORNECEDORES NA TELA DE VISÃO ───
                         col_cfg_forn = {
                             "Cód": st.column_config.NumberColumn(disabled=False, format="%d"),
-                            "Produtos": st.column_config.TextColumn(disabled=False),
+                            "Produtos": st.column_config.SelectboxColumn("Produtos", options=LISTA_NOMES_PRODUTOS, disabled=False),
                             "Total": st.column_config.NumberColumn("Total", disabled=False, format="%d"),
                             "R$ Preço": st.column_config.NumberColumn("R$ Preço", format="R$ %.2f", disabled=False),
                             "R$ Total": st.column_config.NumberColumn("R$ Total", format="R$ %.2f", disabled=True)
@@ -844,7 +842,7 @@ elif perfil_navegacao == "Visão Fornecedores (Ademilto)":
                             key=f"forn_{fornecedor}_{st.session_state['reset_counter']}"
                         )
                         
-                        soma_dinamica = (df_forn_edit["Total"].fillna(0) * df_forn_edit["R$ Preço"].fillna(0)).sum()
+                        soma_dinamica = (pd.to_numeric(df_forn_edit["Total"], errors='coerce').fillna(0) * pd.to_numeric(df_forn_edit["R$ Preço"], errors='coerce').fillna(0)).sum()
                         
                         st.markdown(f"""
                             <div style="text-align:right; font-weight:700; margin-top:8px; color:var(--green-bright); font-size:16px;">
@@ -870,7 +868,6 @@ elif perfil_navegacao == "Configurar Fornecedores":
     with st.container(border=True):
         st.caption("Ao adicionar uma nova linha, clique na coluna 'Produto' para selecionar na lista oficial.")
         
-        # A MÁGICA DO SELECTBOX ESTÁ AQUI
         col_cfg_setup = {
             "Fornecedor": st.column_config.TextColumn("Nome do Fornecedor", required=True),
             "Produto": st.column_config.SelectboxColumn("Selecione o Produto", options=LISTA_NOMES_PRODUTOS, required=True)
