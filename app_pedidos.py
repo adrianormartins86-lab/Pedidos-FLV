@@ -89,6 +89,19 @@ section[data-testid="stSidebar"] .stRadio label { font-size: 14px; }
     box-shadow: 0 0 0 3px var(--green-glow) !important;
 }
 
+/* Títulos Editáveis Específicos */
+.title-input input {
+    font-weight: 700 !important;
+    font-size: 16px !important;
+    color: var(--green-bright) !important;
+    padding: 2px 8px !important;
+    background: transparent !important;
+    border: 1px dashed #21262d !important;
+}
+.title-input input:focus {
+    border: 1px dashed #2ea043 !important;
+}
+
 /* ── Data Editor: cabeçalho verde escuro e fonte reduzida ── */
 [data-testid="stDataEditor"] [data-testid="glideDataEditor"] .gdg-header-cell,
 [data-testid="stDataEditor"] .dvn-stack .gdg-header {
@@ -728,10 +741,11 @@ elif perfil_navegacao == "Visão Fornecedores (Ademilto)":
     <div class="page-header" style="background: linear-gradient(90deg, var(--green-dark) 0%, #0d2018 100%); padding: 14px 20px; border-radius: 10px; margin-bottom: 22px;">
         <span style="font-size: 26px; margin-right: 12px;">🚚</span>
         <div style="display: inline-block; vertical-align: top;">
-            <div style="font-size: 20px; font-weight: 700; color: var(--text-header);">Visão Fornecedores (Ademilto)</div>
-            <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Cálculo automático de volumes por fornecedor baseado no consolidado das lojas e preços</div>
+            <div style="font-size: 20px; font-weight: 700; color: var(--text-header);">Visão Fornecedores (Ademilto) - Modo de Edição Livre</div>
+            <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Altere nomes, códigos e totais livremente antes de gerar seu print. Adicione ou remova linhas na própria tabela.</div>
         </div>
     </div>
+    <style>.title-input input { font-size:18px !important; font-weight: bold !important; color: #2ea043 !important; background: transparent !important; border: 1px dashed #21262d !important; padding: 2px !important; } .title-input input:focus { border: 1px dashed #2ea043 !important; } </style>
     """, unsafe_allow_html=True)
 
     df_base_produtos = st.session_state['df_produtos'][["Código", "Descrição"]]
@@ -740,7 +754,6 @@ elif perfil_navegacao == "Visão Fornecedores (Ademilto)":
 
     df_consolidado = pd.merge(df_base_produtos, df_base_pedidos[["Código", "Total", "R$Preço"]], on="Código", how="inner")
     
-    # Pegamos os fornecedores dinâmicos da configuração
     df_cfg = st.session_state['df_fornecedores_config']
     nomes_fornecedores = df_cfg["Fornecedor"].unique()
     
@@ -751,23 +764,26 @@ elif perfil_navegacao == "Visão Fornecedores (Ademilto)":
             
             with cols[j]:
                 with st.container(border=True):
-                    st.markdown(f"**🛒 {fornecedor}**")
+                    
+                    # 1. TÍTULO DO FORNECEDOR EDITÁVEL
+                    st.markdown('<div class="title-input">', unsafe_allow_html=True)
+                    st.text_input("Fornecedor", value=f"🛒 {fornecedor}", label_visibility="collapsed", key=f"title_{fornecedor}_{st.session_state['reset_counter']}")
+                    st.markdown('</div>', unsafe_allow_html=True)
                     
                     # ─── REGRA PARA FORNECEDORES ESPECIAIS (LINHA POR LOJA) ───
                     if fornecedor in FORNECEDORES_ESPECIAIS_LINHA:
                         df_ped_esp = df_base_pedidos[df_base_pedidos["Código"].isin(codigos_do_fornecedor)]
                         
                         dict_lojas = {"Visão": LOJAS + ["TOTAL"]}
-                        col_configs_especial = {"Visão": st.column_config.TextColumn("Visão", disabled=True)}
+                        col_configs_especial = {"Visão": st.column_config.TextColumn("Visão", disabled=False)}
                         
                         for cod in codigos_do_fornecedor:
                             desc_series = df_base_produtos[df_base_produtos["Código"] == cod]["Descrição"]
                             desc = desc_series.values[0] if not desc_series.empty else "Prod"
                             
-                            # Formata o cabeçalho p/ ficar CÓDIGO - PALAVRA CHAVE
-                            palavra = desc.split()[0]
-                            if "Melancia" in desc and len(desc.split()) > 1: palavra = desc.split()[1]
-                            elif "Banana" in desc and len(desc.split()) > 1: palavra = desc.split()[1]
+                            # Pega as 2 primeiras palavras para abreviar
+                            partes = desc.split()
+                            palavra = " ".join(partes[:2]) if len(partes) > 1 else desc
                             nome_col = f"{cod} - {palavra}"
                             
                             valores_lojas = []
@@ -775,22 +791,22 @@ elif perfil_navegacao == "Visão Fornecedores (Ademilto)":
                                 val = df_ped_esp[df_ped_esp["Código"] == cod][loja].values
                                 valores_lojas.append(int(val[0]) if len(val) > 0 else 0)
                             
-                            # Adiciona soma na última linha (TOTAL)
                             valores_lojas.append(sum(valores_lojas))
                             dict_lojas[nome_col] = valores_lojas
-                            col_configs_especial[nome_col] = st.column_config.NumberColumn(nome_col, format="%d", disabled=True)
+                            col_configs_especial[nome_col] = st.column_config.NumberColumn(nome_col, format="%d", disabled=False)
                             
                         df_especial = pd.DataFrame(dict_lojas)
                         
-                        # Altura baseada nas 8 Lojas + 1 Linha de total = 9 linhas (+ cabeçalho)
-                        altura_esp = int((len(df_especial) + 1) * 36) + 5
+                        altura_esp = int((len(df_especial) + 2) * 36) + 5
                         
+                        # Data editor TOTALMENTE destravado, sem R$ Preço e sem Total Final.
                         st.data_editor(
                             df_especial, 
                             hide_index=True, 
                             use_container_width=True, 
                             column_config=col_configs_especial,
                             height=altura_esp,
+                            num_rows="dynamic",
                             key=f"forn_esp_{fornecedor}_{st.session_state['reset_counter']}"
                         )
                     
@@ -801,26 +817,28 @@ elif perfil_navegacao == "Visão Fornecedores (Ademilto)":
                         df_fornecedor["R$ Total"] = df_fornecedor["Total"] * df_fornecedor["R$ Preço"]
                         df_exibicao = df_fornecedor[["Cód", "Produtos", "Total", "R$ Preço", "R$ Total"]].copy()
 
-                        altura_dinamica = int((len(df_exibicao) + 1) * 36) + 5
+                        altura_dinamica = int((len(df_exibicao) + 2) * 36) + 5
                         
                         col_cfg_forn = {
-                            "Cód": st.column_config.NumberColumn(width=45, disabled=True, format="%d"),
-                            "Produtos": st.column_config.TextColumn(width=110, disabled=True),
+                            "Cód": st.column_config.NumberColumn(width=45, disabled=False, format="%d"),
+                            "Produtos": st.column_config.TextColumn(width=110, disabled=False),
                             "Total": st.column_config.NumberColumn("Total", width=50, disabled=False, format="%d"),
                             "R$ Preço": st.column_config.NumberColumn("R$ Preço", width=65, format="R$ %.2f", disabled=False),
                             "R$ Total": st.column_config.NumberColumn("R$ Total", width=65, format="R$ %.2f", disabled=True)
                         }
                         
+                        # Data editor TOTALMENTE destravado com adição de linhas livres
                         df_forn_edit = st.data_editor(
                             df_exibicao, 
                             hide_index=True, 
                             use_container_width=True, 
                             column_config=col_cfg_forn,
                             height=altura_dinamica,
+                            num_rows="dynamic",
                             key=f"forn_{fornecedor}_{st.session_state['reset_counter']}"
                         )
                         
-                        soma_dinamica = (df_forn_edit["Total"] * df_forn_edit["R$ Preço"]).sum()
+                        soma_dinamica = (df_forn_edit["Total"].fillna(0) * df_forn_edit["R$ Preço"].fillna(0)).sum()
                         
                         st.markdown(f"""
                             <div style="text-align:right; font-weight:700; margin-top:8px; color:var(--green-bright); font-size:16px;">
@@ -830,7 +848,7 @@ elif perfil_navegacao == "Visão Fornecedores (Ademilto)":
         st.write("<br>", unsafe_allow_html=True)
 
 # ─────────────────────────────────────────────
-# ROTA 4: CONFIGURAR FORNECEDORES (NOVA TELA)
+# ROTA 4: CONFIGURAR FORNECEDORES
 # ─────────────────────────────────────────────
 elif perfil_navegacao == "Configurar Fornecedores":
     st.markdown("""
@@ -868,7 +886,6 @@ elif perfil_navegacao == "Configurar Fornecedores":
 # ROTA 5: CATÁLOGO DE PRODUTOS
 # ─────────────────────────────────────────────
 elif perfil_navegacao == "Catálogo de Produtos":
-
     st.markdown("""
     <div class="page-header" style="background: linear-gradient(90deg, var(--green-dark) 0%, #0d2018 100%); padding: 14px 20px; border-radius: 10px; margin-bottom: 22px;">
         <span style="font-size: 26px; margin-right: 12px;">🏷️</span>
