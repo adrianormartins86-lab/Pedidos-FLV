@@ -560,7 +560,7 @@ with st.sidebar:
     except Exception:
         st.markdown("🐦")
 
-    st.markdown(f"### Olá, *{usuario_atual}*")
+    st.markdown(f"### Olá, **{usuario_atual}**")
     st.caption("Sistema de Pedidos Integrado")
     st.divider()
 
@@ -616,7 +616,7 @@ if perfil_navegacao == "Separação e Fechamento":
             "Código":      st.column_config.NumberColumn(width=80, format="%d", disabled=True),
             "Descrição":   st.column_config.TextColumn(disabled=True),
             "Tipo":        st.column_config.TextColumn("Setor", width=100, disabled=True),
-            "TOTAL GERAL": st.column_config.NumberColumn("TOTAL ▶️", width=90, format="%d", disabled=True),
+            "TOTAL GERAL": st.column_config.NumberColumn("TOTAL ▶", width=90, format="%d", disabled=True),
             "R$Preço":     st.column_config.NumberColumn("R$ Preço", width=100, format="R$ %.2f", min_value=0.0, step=0.01),
             "OBS:":        st.column_config.TextColumn("OBS:", width=200)
         }
@@ -709,7 +709,7 @@ elif perfil_navegacao == "Visão das Lojas":
     df_loja = pd.merge(df_loja, df_qtd, on="Código", how="left")
 
     with st.container(border=True):
-        st.info("💡 *Dica:* Preencha primeiro o *Estoque* e depois a *Qtde* do pedido.")
+        st.info("💡 **Dica:** Preencha primeiro o **Estoque** e depois a **Qtde** do pedido.")
         col_cfg_loja = {
             "Código":         st.column_config.NumberColumn(width=85, format="%d", disabled=True),
             "Descrição":      st.column_config.TextColumn(disabled=True),
@@ -908,7 +908,7 @@ elif perfil_navegacao == "Catálogo de Produtos":
     """, unsafe_allow_html=True)
 
     with st.container(border=True):
-        st.caption("➕ Adicione produtos na última linha  •  🗑️ Selecione a linha e pressione *Delete* para remover  •  ✅ Checkboxes controlam visibilidade por loja")
+        st.caption("➕ Adicione produtos na última linha  •  🗑️ Selecione a linha e pressione **Delete** para remover  •  ✅ Checkboxes controlam visibilidade por loja")
 
         config_catalogo = {
             "Código":    st.column_config.NumberColumn("Cód. Interno", width=90, required=True, min_value=0, format="%d"),
@@ -937,5 +937,5 @@ elif perfil_navegacao == "Catálogo de Produtos":
                 st.rerun()
         with col_info:
             total_prods = len(df_cat_editado)
-            st.info(f"📦 *{total_prods}* produtos cadastrados  •  "
-                    f"*{len(LOJAS)}* lojas configuradas")
+            st.info(f"📦 **{total_prods}** produtos cadastrados  •  "
+                    f"**{len(LOJAS)}** lojas configuradas")
