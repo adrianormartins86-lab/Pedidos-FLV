@@ -454,8 +454,8 @@ if st.session_state['usuario_logado'] is None:
             h1, h2 = st.columns([4, 1])
             with h1:
                 st.markdown("""
-                    <h2 style='margin-bottom:0'>Portal de Pedidos</h2>
-                    <p style='color:#7d8590;font-size:14px;margin-top:4px'>FLV Normal — Molicenter</p>
+                    <h2 style='margin-bottom:0'>FLV Normal — Molicenter</h2>
+                    <p style='color:#7d8590;font-size:14px;margin-top:4px'>Ter até 17:00hrs | Qui até 14:00hrs</p>
                 """, unsafe_allow_html=True)
             with h2:
                 st.write("")
