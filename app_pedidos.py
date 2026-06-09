@@ -153,7 +153,7 @@ div[data-testid="stVerticalBlockBorderWrapper"]:hover {
 # ─────────────────────────────────────────────
 # CONSTANTES E DADOS INICIAIS
 # ─────────────────────────────────────────────
-LOJAS = ["Loja 01", "Loja 02", "Loja 03", "Loja 04", "Loja 05", "Loja 06", "Loja 07", "Loja 08"]
+LOJAS = [Loja 01"", ""Loja 02"", ""Loja 03"", ""Loja 04"", ""Loja 05"", ""Loja 06"", ""Loja 07"", ""Loja 08""]"
 NOVOS_NOMES_LOJAS = ["291", "292", "293", "294", "295", "296", "297", "298"]
 MAPA_LOJAS = dict(zip(LOJAS, NOVOS_NOMES_LOJAS))
 FORNECEDORES_ESPECIAIS_LINHA = ["BANANA SANTOME", "MELANCIA CARLIN", "MELANCIA MARCINHO", "RODRIGO BATATA"]
@@ -454,8 +454,8 @@ if st.session_state['usuario_logado'] is None:
             h1, h2 = st.columns([4, 1])
             with h1:
                 st.markdown("""
-                    <h2 style='margin-bottom:0'>FLV Normal — Molicenter</h2>
-                    <p style='color:#7d8590;font-size:14px;margin-top:4px'>Ter até 17:00hrs | Qui até 14:00hrs</p>
+                    <h2 style='margin-bottom:0'>Portal de Pedidos</h2>
+                    <p style='color:#7d8590;font-size:14px;margin-top:4px'>FLV Normal — Molicenter</p>
                 """, unsafe_allow_html=True)
             with h2:
                 st.write("")
