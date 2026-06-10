@@ -723,10 +723,13 @@ def _gerar_excel_formatado(df_editado_admin, filtro_setor):
                 cell.fill = PatternFill("solid", start_color=TOTAL_BG)
                 cell.font = Font(name="Arial", size=9, bold=True)
                             
-            elif col_name == pre_col:
-                cell.fill = PatternFill("solid", start_color=PRICE_BG)
-                
-                  cell.number_format = '[$R$-pt-BR] #,##0.00'
+           # COLUNA PREÇO
+elif col_name == pre_col:
+
+    cell.fill = PatternFill("solid", start_color=PRICE_BG)
+
+    # Formata a coluna inteira como moeda
+    cell.number_format = '[$R$-pt-BR] #,##0.00'
             else:
                 cell.fill = PatternFill("solid", start_color=row_bg)
 
