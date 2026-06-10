@@ -3,6 +3,9 @@ import pandas as pd
 import io
 import streamlit.components.v1 as components
 from streamlit_gsheets import GSheetsConnection
+import openpyxl
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+from openpyxl.utils import get_column_letter
 
 # ─────────────────────────────────────────────
 # CONFIGURAÇÃO DA PÁGINA
@@ -149,12 +152,8 @@ div[data-testid="stVerticalBlockBorderWrapper"]:hover {
 .topbar-title { font-size: 18px; font-weight: 700; color: var(--text-header); }
 .topbar-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
 
-/* ─────────────────────────────────────────────
-   CONFIGURAÇÕES ESPECÍFICAS PARA IMPRESSÃO (DUAS COLUNAS LADO A LADO)
-   ───────────────────────────────────────────── */
 @media print {
     @page { margin: 10mm; }
-
     .stApp, .main, body, html {
         background-color: #ffffff !important;
         color: #000000 !important;
@@ -162,33 +161,24 @@ div[data-testid="stVerticalBlockBorderWrapper"]:hover {
         padding: 0 !important;
         margin: 0 !important;
     }
-    
     .main .block-container, [data-testid="stAppViewBlockContainer"] {
         padding-top: 0 !important;
         margin-top: 0 !important;
     }
-    
-    header, [data-testid="stSidebar"], [data-testid="stHeader"] {
-        display: none !important;
-    }
-    
+    header, [data-testid="stSidebar"], [data-testid="stHeader"] { display: none !important; }
     [data-testid="stElementContainer"]:has([data-testid="stDataEditor"]),
     [data-testid="stElementContainer"]:has(.topbar-loja),
     [data-testid="stElementContainer"]:has([data-testid="stMetric"]),
     [data-testid="stElementContainer"]:has(button),
     [data-testid="stHorizontalBlock"],
     div[data-testid="stVerticalBlockBorderWrapper"],
-    hr, .stAlert, .stInfo {
-        display: none !important;
-    }
-    
+    hr, .stAlert, .stInfo { display: none !important; }
     #print-section {
         display: block !important;
         width: 100% !important;
         margin-top: 0 !important;
         padding-top: 0 !important;
     }
-    
     #print-section h2 {
         font-size: 16px !important;
         margin: 0 0 10px 0 !important;
@@ -196,30 +186,19 @@ div[data-testid="stVerticalBlockBorderWrapper"]:hover {
         border-bottom: 1px solid #000 !important;
         color: #000 !important;
     }
-    
-    /* Configuração do Flexbox para lado a lado */
-    .print-container {
-        display: flex;
-        gap: 15px;
-        align-items: flex-start;
-        width: 100%;
-    }
-    .print-col {
-        flex: 1;
-        width: 50%;
-    }
-    
+    .print-container { display: flex; gap: 15px; align-items: flex-start; width: 100%; }
+    .print-col { flex: 1; width: 50%; }
     table.print-table {
         width: 100%;
         border-collapse: collapse;
-        font-size: 10px !important;  /* Ainda menor e mais compacto */
+        font-size: 10px !important;
         color: #000000 !important;
         font-family: 'IBM Plex Sans', sans-serif;
         line-height: 1.05 !important;
     }
     table.print-table th, table.print-table td {
         border: 1px solid #000000 !important;
-        padding: 2px 4px !important; /* Espaçamento mínimo */
+        padding: 2px 4px !important;
         text-align: left;
         color: #000000 !important;
         background-color: #ffffff !important;
@@ -230,15 +209,10 @@ div[data-testid="stVerticalBlockBorderWrapper"]:hover {
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
     }
-    table.print-table tr {
-        break-inside: avoid !important;
-        page-break-inside: avoid !important;
-    }
+    table.print-table tr { break-inside: avoid !important; page-break-inside: avoid !important; }
 }
 @media screen {
-    #print-section {
-        display: none !important;
-    }
+    #print-section { display: none !important; }
 }
 </style>
 """, unsafe_allow_html=True)
@@ -657,6 +631,141 @@ with st.sidebar:
         st.rerun()
 
 # ─────────────────────────────────────────────
+# HELPER: gera o arquivo Excel formatado
+# ─────────────────────────────────────────────
+def _gerar_excel_formatado(df_editado_admin, filtro_setor):
+    """
+    Recebe o DataFrame já editado e o filtro de setor.
+    Retorna bytes do .xlsx pronto para download.
+    """
+    HDR_BG    = "C55A11"   # laranja escuro — cabeçalho
+    HDR_FG    = "FFFFFF"   # branco
+    GREEN_ROW = "E2EFDA"   # verde claro alternado
+    WHITE_ROW = "FFFFFF"   # branco alternado
+    TOTAL_BG  = "C6EFCE"   # verde suave — coluna TOTAL
+    PRICE_BG  = "FCE4D6"   # laranja suave — coluna PREÇO
+
+    thin = Side(style="thin", color="BFBFBF")
+    brd  = Border(left=thin, right=thin, top=thin, bottom=thin)
+
+    df_exp = df_editado_admin.copy()
+    df_exp = df_exp.rename(columns=MAPA_LOJAS)
+
+    if filtro_setor in ("Box", "Pedra"):
+        df_exp = df_exp.rename(columns={
+            "Código":      "CODIGO",
+            "Descrição":   "PRODUTOS MOLICENTER",
+            "TOTAL GERAL": "TOTAL",
+            "R$Preço":     "PREÇO",
+        })
+
+    # Nomes das colunas de base (CODIGO/Código, PRODUTO/Descrição, [Tipo])
+    cod_col  = "CODIGO"      if filtro_setor in ("Box", "Pedra") else "Código"
+    prod_col = "PRODUTOS MOLICENTER" if filtro_setor in ("Box", "Pedra") else "Descrição"
+    tot_col  = "TOTAL"       if filtro_setor in ("Box", "Pedra") else "TOTAL GERAL"
+    pre_col  = "PREÇO"       if filtro_setor in ("Box", "Pedra") else "R$Preço"
+    obs_col  = "OBS:"
+
+    base_cols = [cod_col, prod_col]
+    if "Tipo" in df_exp.columns:
+        base_cols.append("Tipo")
+
+    store_cols  = NOVOS_NOMES_LOJAS              # ["291"…"298"]
+    spacer_cols = [" " * i for i in range(1, 7)] # 6 colunas vazias ocultas
+    for s in spacer_cols:
+        df_exp[s] = ""
+
+    final_cols = base_cols + store_cols + spacer_cols + [tot_col, pre_col, obs_col]
+    df_exp = df_exp[[c for c in final_cols if c in df_exp.columns]]
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Pedidos FLV"
+
+    HEADER_ROW = 2    # linha 1 fica em branco; cabeçalho na linha 2
+    DATA_START  = 3
+
+    cols = list(df_exp.columns)
+
+    # ── Cabeçalho ──────────────────────────────────────────────────────────
+    for ci, col_name in enumerate(cols, 1):
+        cell = ws.cell(row=HEADER_ROW, column=ci, value=col_name)
+        cell.font      = Font(bold=True, color=HDR_FG, name="Arial", size=9)
+        cell.fill      = PatternFill("solid", start_color=HDR_BG)
+        cell.alignment = Alignment(horizontal="center", vertical="center")
+        cell.border    = brd
+
+    # AutoFiltro na linha de cabeçalho
+    ws.auto_filter.ref = f"A{HEADER_ROW}:{get_column_letter(len(cols))}{HEADER_ROW}"
+
+    # ── Dados ──────────────────────────────────────────────────────────────
+    for ri, (_, row) in enumerate(df_exp.iterrows(), DATA_START):
+        row_bg = GREEN_ROW if (ri - DATA_START) % 2 == 0 else WHITE_ROW
+
+        for ci, col_name in enumerate(cols, 1):
+            raw = row[col_name]
+            # Zera vira célula vazia
+            if raw == 0 or raw == 0.0 or str(raw).strip() in ("0", "0.0", "nan", ""):
+                raw = None
+
+            cell = ws.cell(row=ri, column=ci, value=raw)
+            cell.font   = Font(name="Arial", size=9)
+            cell.border = brd
+
+            if col_name in (prod_col, "Descrição", "PRODUTOS MOLICENTER"):
+                cell.alignment = Alignment(horizontal="left", vertical="center")
+            else:
+                cell.alignment = Alignment(horizontal="center", vertical="center")
+
+            if col_name == tot_col:
+                cell.fill = PatternFill("solid", start_color=TOTAL_BG)
+                cell.font = Font(name="Arial", size=9, bold=True)
+            elif col_name == pre_col:
+                cell.fill = PatternFill("solid", start_color=PRICE_BG)
+                if raw is not None:
+                    cell.number_format = 'R$ #,##0.00'
+            else:
+                cell.fill = PatternFill("solid", start_color=row_bg)
+
+    # ── Larguras das colunas ────────────────────────────────────────────────
+    widths = {
+        cod_col:  8,
+        prod_col: 34,
+        "Tipo":   8,
+        tot_col:  8,
+        pre_col:  12,
+        obs_col:  22,
+    }
+    for s in store_cols:
+        widths[s] = 6
+    for s in spacer_cols:
+        widths[s] = 3
+
+    for ci, col_name in enumerate(cols, 1):
+        ws.column_dimensions[get_column_letter(ci)].width = widths.get(col_name, 8)
+
+    # ── Ocultar colunas de espaçamento (K:P equivalentes) ──────────────────
+    for ci, col_name in enumerate(cols, 1):
+        if col_name.strip() == "":
+            ws.column_dimensions[get_column_letter(ci)].hidden = True
+
+    # ── Congelar painéis: mantém CODIGO+PRODUTO visíveis ao rolar ──────────
+    freeze_col = len(base_cols) + 1
+    ws.freeze_panes = f"{get_column_letter(freeze_col)}{DATA_START}"
+
+    # ── Alturas das linhas ──────────────────────────────────────────────────
+    ws.row_dimensions[1].height          = 6   # linha 1 em branco
+    ws.row_dimensions[HEADER_ROW].height = 18
+    for ri in range(DATA_START, DATA_START + len(df_exp)):
+        ws.row_dimensions[ri].height = 15
+
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    return buf.getvalue()
+
+
+# ─────────────────────────────────────────────
 # ROTA 1: SEPARAÇÃO E FECHAMENTO
 # ─────────────────────────────────────────────
 if perfil_navegacao == "Separação e Fechamento":
@@ -729,41 +838,15 @@ if perfil_navegacao == "Separação e Fechamento":
             st.download_button("⬇️ CSV", data=csv, file_name="separacao_semanal.csv", mime="text/csv", use_container_width=True)
             
         with col_excel:
-            buffer = io.BytesIO()
-            with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
-                df_export = df_editado_admin.copy()
-                df_export = df_export.rename(columns=MAPA_LOJAS)
-                
-                df_export = df_export.replace({0: "", 0.0: ""})
-                idx_ultima_loja = df_export.columns.get_loc('298')
-                
-                for i in range(1, 7):
-                    df_export.insert(idx_ultima_loja + i, " " * i, "")
-                
-                base_cols = ["Código", "Descrição"]
-                if "Tipo" in df_export.columns:
-                    base_cols.append("Tipo")
-                    
-                cols_finais = base_cols + NOVOS_NOMES_LOJAS + [" " * i for i in range(1, 7)] + ["TOTAL GERAL", "R$Preço", "OBS:"]
-                
-                df_export = df_export[cols_finais]
-                
-                # ------ NOVA LÓGICA DE RENOMEAÇÃO CONDICIONAL AQUI ------
-                if filtro_setor in ["Box", "Pedra"]:
-                    df_export = df_export.rename(columns={
-                        "Código": "CODIGO",
-                        "Descrição": "PRODUTOS MOLICENTER",
-                        "TOTAL GERAL": "TOTAL",       # <--- NOVA LINHA
-                        "R$Preço": "PREÇO"            # <--- NOVA LINHA
-                    })
-                # --------------------------------------------------------
-
-                df_export.to_excel(writer, index=False, sheet_name='Pedidos FLV')
-            
-            # Ajusta o nome do arquivo conforme o filtro
+            excel_bytes = _gerar_excel_formatado(df_editado_admin, filtro_setor)
             nome_arquivo_excel = f"separacao_{filtro_setor.lower()}.xlsx" if filtro_setor != "Todos" else "separacao_semanal.xlsx"
-            
-            st.download_button("⬇️ Excel", data=buffer.getvalue(), file_name=nome_arquivo_excel, mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True)
+            st.download_button(
+                "⬇️ Excel",
+                data=excel_bytes,
+                file_name=nome_arquivo_excel,
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                use_container_width=True
+            )
 
         with col_limpa:
             if st.button("🚨 Zerar Pedidos/Estoque", use_container_width=True):
@@ -825,12 +908,10 @@ elif perfil_navegacao == "Visão das Lojas":
                 key=f"loja_editor_{st.session_state['reset_counter']}"
             )
 
-        # --- TABELA OCULTA PARA IMPRESSÃO COMPLETA E RESUMIDA (2 COLUNAS) ---
         df_imprimir = df_editado.copy()
         df_imprimir["Código"] = df_imprimir["Código"].fillna(0).astype(int).astype(str)
         df_imprimir = df_imprimir.rename(columns={"Tipo": "Setor", "Estoque": "Est.", "Qtde": "Ped."})
         
-        # Divide a tabela em duas partes
         meio = (len(df_imprimir) // 2) + (len(df_imprimir) % 2)
         df1 = df_imprimir.iloc[:meio]
         df2 = df_imprimir.iloc[meio:]
@@ -849,7 +930,6 @@ elif perfil_navegacao == "Visão das Lojas":
             </div>
         </div>
         """, unsafe_allow_html=True)
-        # --------------------------------------------------------------------
 
         itens_com_pedido = int((df_editado["Qtde"] > 0).sum())
         total_itens      = len(df_editado)
