@@ -717,7 +717,7 @@ def _gerar_excel_formatado(df_editado_admin, filtro_setor):
             else:
                 cell.alignment = Alignment(horizontal="center", vertical="center")
 
-           if col_name == tot_col:
+          if col_name == tot_col:
     cell.value = f'=IF(SUM(C{ri}:P{ri})=0,"",SUM(C{ri}:P{ri}))'
 
     cell.fill = PatternFill("solid", start_color=TOTAL_BG)
@@ -726,10 +726,7 @@ def _gerar_excel_formatado(df_editado_admin, filtro_setor):
 elif col_name == pre_col:
 
     cell.fill = PatternFill("solid", start_color=PRICE_BG)
-
-    # Aplica formato monetário em toda a coluna,
-    # mesmo quando a célula estiver vazia
-    cell.number_format = 'R$ #,##0.00'
+    cell.number_format = '[$R$-416] #,##0.00'
 
 else:
     cell.fill = PatternFill("solid", start_color=row_bg)
