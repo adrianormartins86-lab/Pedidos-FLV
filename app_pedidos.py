@@ -725,7 +725,7 @@ def _gerar_excel_formatado(df_editado_admin, filtro_setor):
                             
             elif col_name == pre_col:
                 cell.fill = PatternFill("solid", start_color=PRICE_BG)
-                if raw is not None:
+                
                   cell.number_format = '[$R$-pt-BR] #,##0.00'
             else:
                 cell.fill = PatternFill("solid", start_color=row_bg)
