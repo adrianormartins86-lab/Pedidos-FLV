@@ -15,7 +15,7 @@ st.set_page_config(
 )
 
 # ─────────────────────────────────────────────
-# CSS GLOBAL
+# CSS GLOBAL E DE IMPRESSÃO
 # ─────────────────────────────────────────────
 st.markdown("""
 <style>
@@ -150,10 +150,9 @@ div[data-testid="stVerticalBlockBorderWrapper"]:hover {
 .topbar-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
 
 /* ─────────────────────────────────────────────
-   CONFIGURAÇÕES ESPECÍFICAS PARA IMPRESSÃO
+   CONFIGURAÇÕES ESPECÍFICAS PARA IMPRESSÃO (NOVO FIX)
    ───────────────────────────────────────────── */
 @media print {
-    /* Ajusta as margens do papel para caber mais informação */
     @page { margin: 10mm; }
 
     .stApp, .main, body, html {
@@ -162,14 +161,28 @@ div[data-testid="stVerticalBlockBorderWrapper"]:hover {
         background-image: none !important;
     }
     
-    /* Força a ocultação de quase tudo da interface escura */
-    header, [data-testid="stSidebar"], [data-testid="stDataEditor"], 
-    [data-testid="stSelectbox"], iframe[title*="glide_data_grid"],
-    .stButton, [data-testid="stMetric"], .topbar-loja, hr, 
-    div[data-testid="stVerticalBlockBorderWrapper"], .stAlert {
+    /* 1. Oculta cabeçalhos e barras de navegação */
+    header, [data-testid="stSidebar"] {
         display: none !important;
     }
     
+    /* 2. OCULTAÇÃO AGRESSIVA: Desativa a tabela escura (DataEditor), selects e botões */
+    [data-testid="stDataEditor"], 
+    [data-testid="stSelectbox"], 
+    [data-testid="stMetric"], 
+    [data-testid="stButton"],
+    .stAlert, .topbar-loja, hr, iframe, canvas {
+        display: none !important;
+        opacity: 0 !important;
+        height: 0 !important;
+    }
+    
+    /* 3. Apaga a "caixa" invisível que fica em volta da tabela escura */
+    [data-testid="stElementContainer"]:has([data-testid="stDataEditor"]) {
+        display: none !important;
+    }
+    
+    /* 4. Garante que a NOSSA tabela de impressão seja a única coisa na tela */
     #print-section {
         display: block !important;
         width: 100% !important;
@@ -177,7 +190,7 @@ div[data-testid="stVerticalBlockBorderWrapper"]:hover {
     
     #print-section h2 {
         font-size: 16px !important;
-        margin: 0 0 8px 0 !important;
+        margin: 0 0 10px 0 !important;
         padding-bottom: 5px !important;
         border-bottom: 1px solid #000 !important;
         color: #000 !important;
@@ -186,14 +199,14 @@ div[data-testid="stVerticalBlockBorderWrapper"]:hover {
     table.print-table {
         width: 100%;
         border-collapse: collapse;
-        font-size: 11px !important; /* Letra mais pequena */
+        font-size: 11px !important; 
         color: #000000 !important;
         font-family: 'IBM Plex Sans', sans-serif;
         line-height: 1.1 !important;
     }
     table.print-table th, table.print-table td {
         border: 1px solid #000000 !important;
-        padding: 2px 4px !important; /* Espaçamento muito reduzido */
+        padding: 3px 5px !important; 
         text-align: left;
         color: #000000 !important;
         background-color: #ffffff !important;
@@ -782,9 +795,7 @@ elif perfil_navegacao == "Visão das Lojas":
 
         # --- TABELA OCULTA PARA IMPRESSÃO COMPLETA E RESUMIDA ---
         df_imprimir = df_editado.copy()
-        # Formata o Código para número inteiro sem decimais
         df_imprimir["Código"] = df_imprimir["Código"].fillna(0).astype(int).astype(str)
-        # Renomeia as colunas para títulos mais curtos e diretos
         df_imprimir = df_imprimir.rename(columns={"Tipo": "Setor", "Estoque": "Est.", "Qtde": "Ped."})
         
         html_table = df_imprimir.to_html(index=False, classes="print-table")
