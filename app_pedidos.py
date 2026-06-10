@@ -709,7 +709,12 @@ def _gerar_excel_formatado(df_editado_admin, filtro_setor):
                 raw = None
 
             cell = ws.cell(row=ri, column=ci, value=raw)
-            cell.font   = Font(name="Arial", size=9)
+              # TUDO EM NEGRITO
+        cell.font = Font(
+            name="Arial",
+            size=9,
+            bold=True
+        )
             cell.border = brd
 
             if col_name in (prod_col, "Descrição", "PRODUTOS MOLICENTER"):
