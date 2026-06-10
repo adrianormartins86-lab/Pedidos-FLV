@@ -153,30 +153,47 @@ div[data-testid="stVerticalBlockBorderWrapper"]:hover {
    CONFIGURAÇÕES ESPECÍFICAS PARA IMPRESSÃO
    ───────────────────────────────────────────── */
 @media print {
+    /* Ajusta as margens do papel para caber mais informação */
+    @page { margin: 10mm; }
+
     .stApp, .main, body, html {
         background-color: #ffffff !important;
         color: #000000 !important;
         background-image: none !important;
     }
+    
+    /* Força a ocultação de quase tudo da interface escura */
     header, [data-testid="stSidebar"], [data-testid="stDataEditor"], 
+    [data-testid="stSelectbox"], iframe[title*="glide_data_grid"],
     .stButton, [data-testid="stMetric"], .topbar-loja, hr, 
     div[data-testid="stVerticalBlockBorderWrapper"], .stAlert {
         display: none !important;
     }
+    
     #print-section {
         display: block !important;
         width: 100% !important;
     }
+    
+    #print-section h2 {
+        font-size: 16px !important;
+        margin: 0 0 8px 0 !important;
+        padding-bottom: 5px !important;
+        border-bottom: 1px solid #000 !important;
+        color: #000 !important;
+    }
+    
     table.print-table {
         width: 100%;
         border-collapse: collapse;
-        font-size: 13px;
+        font-size: 11px !important; /* Letra mais pequena */
         color: #000000 !important;
         font-family: 'IBM Plex Sans', sans-serif;
+        line-height: 1.1 !important;
     }
     table.print-table th, table.print-table td {
         border: 1px solid #000000 !important;
-        padding: 6px !important;
+        padding: 2px 4px !important; /* Espaçamento muito reduzido */
         text-align: left;
         color: #000000 !important;
         background-color: #ffffff !important;
@@ -763,13 +780,17 @@ elif perfil_navegacao == "Visão das Lojas":
                 key=f"loja_editor_{st.session_state['reset_counter']}"
             )
 
-        # --- TABELA OCULTA PARA IMPRESSÃO COMPLETA ---
+        # --- TABELA OCULTA PARA IMPRESSÃO COMPLETA E RESUMIDA ---
         df_imprimir = df_editado.copy()
-        df_imprimir = df_imprimir.rename(columns={"Tipo": "Setor", "Qtde": "Quantidade"})
+        # Formata o Código para número inteiro sem decimais
+        df_imprimir["Código"] = df_imprimir["Código"].fillna(0).astype(int).astype(str)
+        # Renomeia as colunas para títulos mais curtos e diretos
+        df_imprimir = df_imprimir.rename(columns={"Tipo": "Setor", "Estoque": "Est.", "Qtde": "Ped."})
+        
         html_table = df_imprimir.to_html(index=False, classes="print-table")
         st.markdown(f"""
         <div id="print-section">
-            <h2 style="color: black; margin-bottom: 15px; text-align: center; border-bottom: 2px solid black; padding-bottom: 10px;">
+            <h2 style="color: black; margin-bottom: 10px; text-align: center; border-bottom: 2px solid black; padding-bottom: 5px;">
                 Resumo do Pedido — {loja_selecionada} ({id_loja})
             </h2>
             {html_table}
