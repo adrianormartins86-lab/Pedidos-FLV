@@ -747,8 +747,21 @@ if perfil_navegacao == "Separação e Fechamento":
                 cols_finais = base_cols + NOVOS_NOMES_LOJAS + [" " * i for i in range(1, 7)] + ["TOTAL GERAL", "R$Preço", "OBS:"]
                 
                 df_export = df_export[cols_finais]
+                
+                # ------ NOVA LÓGICA DE RENOMEAÇÃO CONDICIONAL AQUI ------
+                if filtro_setor in ["Box", "Pedra"]:
+                    df_export = df_export.rename(columns={
+                        "Código": "CODIGO",
+                        "Descrição": "PRODUTOS MOLICENTER"
+                    })
+                # --------------------------------------------------------
+
                 df_export.to_excel(writer, index=False, sheet_name='Pedidos FLV')
-            st.download_button("⬇️ Excel", data=buffer.getvalue(), file_name="separacao_semanal.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True)
+            
+            # Ajusta o nome do arquivo conforme o filtro
+            nome_arquivo_excel = f"separacao_{filtro_setor.lower()}.xlsx" if filtro_setor != "Todos" else "separacao_semanal.xlsx"
+            
+            st.download_button("⬇️ Excel", data=buffer.getvalue(), file_name=nome_arquivo_excel, mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True)
 
         with col_limpa:
             if st.button("🚨 Zerar Pedidos/Estoque", use_container_width=True):
