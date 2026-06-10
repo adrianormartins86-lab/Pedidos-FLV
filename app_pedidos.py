@@ -598,17 +598,23 @@ if perfil_navegacao == "Separação e Fechamento":
         cols_order = ["Código", "Descrição", "Tipo"] + LOJAS + ["TOTAL GERAL", "R$Preço", "OBS:"]
         df_final = df_final[cols_order]
 
+        # REMOVE A COLUNA TIPO QUANDO O FILTRO É ATIVADO
         if filtro_setor != "Todos":
             df_final = df_final[df_final["Tipo"] == filtro_setor].reset_index(drop=True)
+            df_final = df_final.drop(columns=["Tipo"])
 
         col_cfg = {
             "Código":      st.column_config.NumberColumn(width=80, format="%d", disabled=True),
             "Descrição":   st.column_config.TextColumn(disabled=True),
-            "Tipo":        st.column_config.TextColumn("Setor", width=100, disabled=True),
             "TOTAL GERAL": st.column_config.NumberColumn("TOTAL ▶", width=90, format="%d", disabled=True),
             "R$Preço":     st.column_config.NumberColumn("R$ Preço", width=100, format="R$ %.2f", min_value=0.0, step=0.01),
             "OBS:":        st.column_config.TextColumn("OBS:", width=200)
         }
+        
+        # SÓ INCLUI A COLUNA TIPO NO CONFIG SE ELA EXISTIR NO DATAFRAME
+        if "Tipo" in df_final.columns:
+            col_cfg["Tipo"] = st.column_config.TextColumn("Setor", width=100, disabled=True)
+            
         for loja, novo_nome in MAPA_LOJAS.items():
             col_cfg[loja] = st.column_config.NumberColumn(novo_nome, format="%d", min_value=0, step=1)
 
@@ -648,10 +654,23 @@ if perfil_navegacao == "Separação e Fechamento":
             with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
                 df_export = df_editado_admin.copy()
                 df_export = df_export.rename(columns=MAPA_LOJAS)
+                
+                # ZERAR OS VALORES NUMÉRICOS EXATOS 0 e 0.0 PARA CÉLULAS VAZIAS NO EXCEL
+                df_export = df_export.replace({0: "", 0.0: ""})
+                
                 idx_ultima_loja = df_export.columns.get_loc('298')
+                
+                # CRIAR AS COLUNAS DE ANÁLISE COM NOMES VAZIOS E ÚNICOS (usando espaços em branco)
                 for i in range(1, 7):
-                    df_export.insert(idx_ultima_loja + i, f"Análise {i}", "")
-                cols_finais = ["Código", "Descrição", "Tipo"] + NOVOS_NOMES_LOJAS + [f"Análise {i}" for i in range(1, 7)] + ["TOTAL GERAL", "R$Preço", "OBS:"]
+                    df_export.insert(idx_ultima_loja + i, " " * i, "")
+                
+                # VERIFICAR SE O TIPO ESTÁ LÁ ANTES DE DEFINIR A ORDEM PARA EXPORTAÇÃO
+                base_cols = ["Código", "Descrição"]
+                if "Tipo" in df_export.columns:
+                    base_cols.append("Tipo")
+                    
+                cols_finais = base_cols + NOVOS_NOMES_LOJAS + [" " * i for i in range(1, 7)] + ["TOTAL GERAL", "R$Preço", "OBS:"]
+                
                 df_export = df_export[cols_finais]
                 df_export.to_excel(writer, index=False, sheet_name='Pedidos FLV')
             st.download_button("⬇️ Excel", data=buffer.getvalue(), file_name="separacao_semanal.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True)
