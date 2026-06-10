@@ -634,19 +634,14 @@ with st.sidebar:
 # HELPER: gera o arquivo Excel formatado
 # ─────────────────────────────────────────────
 def _gerar_excel_formatado(df_editado_admin, filtro_setor):
-
     """
     Recebe o DataFrame já editado e o filtro de setor.
     Retorna bytes do .xlsx pronto para download.
     """
-
     HDR_BG    = "C55A11"   # laranja escuro — cabeçalho
     HDR_FG    = "FFFFFF"   # branco
-
-    # Cores das colunas alternadas
-    GREEN_COL = "E2EFDA"   # verde claro
-    WHITE_COL = "FFFFFF"   # branco
-
+    GREEN_ROW = "E2EFDA"   # verde claro alternado
+    WHITE_ROW = "FFFFFF"   # branco alternado
     TOTAL_BG  = "C6EFCE"   # verde suave — coluna TOTAL
     PRICE_BG  = "FCE4D6"   # laranja suave — coluna PREÇO
 
