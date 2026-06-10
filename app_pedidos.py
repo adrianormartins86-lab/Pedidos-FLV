@@ -753,6 +753,8 @@ if perfil_navegacao == "Separação e Fechamento":
                     df_export = df_export.rename(columns={
                         "Código": "CODIGO",
                         "Descrição": "PRODUTOS MOLICENTER"
+                        "TOTAL GERAL": "TOTAL",       # <--- NOVA LINHA
+                        "R$Preço": "PREÇO"            # <--- NOVA LINHA
                     })
                 # --------------------------------------------------------
 
