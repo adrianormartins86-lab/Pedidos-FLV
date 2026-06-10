@@ -150,7 +150,7 @@ div[data-testid="stVerticalBlockBorderWrapper"]:hover {
 .topbar-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
 
 /* ─────────────────────────────────────────────
-   CONFIGURAÇÕES ESPECÍFICAS PARA IMPRESSÃO (NOVO FIX - TOPO DA PÁGINA)
+   CONFIGURAÇÕES ESPECÍFICAS PARA IMPRESSÃO (DUAS COLUNAS LADO A LADO)
    ───────────────────────────────────────────── */
 @media print {
     @page { margin: 10mm; }
@@ -163,18 +163,15 @@ div[data-testid="stVerticalBlockBorderWrapper"]:hover {
         margin: 0 !important;
     }
     
-    /* 1. REMOVE O ESPAÇO GIGANTE DO TOPO DO STREAMLIT */
     .main .block-container, [data-testid="stAppViewBlockContainer"] {
         padding-top: 0 !important;
         margin-top: 0 !important;
     }
     
-    /* 2. Oculta cabeçalhos e barras de navegação */
     header, [data-testid="stSidebar"], [data-testid="stHeader"] {
         display: none !important;
     }
     
-    /* 3. OCULTAÇÃO DOS CONTAINERS "FANTASMAS" QUE DEIXAVAM BURACO NO TOPO */
     [data-testid="stElementContainer"]:has([data-testid="stDataEditor"]),
     [data-testid="stElementContainer"]:has(.topbar-loja),
     [data-testid="stElementContainer"]:has([data-testid="stMetric"]),
@@ -185,7 +182,6 @@ div[data-testid="stVerticalBlockBorderWrapper"]:hover {
         display: none !important;
     }
     
-    /* 4. Garante que a tabela de impressão suba para o topo */
     #print-section {
         display: block !important;
         width: 100% !important;
@@ -201,17 +197,29 @@ div[data-testid="stVerticalBlockBorderWrapper"]:hover {
         color: #000 !important;
     }
     
+    /* Configuração do Flexbox para lado a lado */
+    .print-container {
+        display: flex;
+        gap: 15px;
+        align-items: flex-start;
+        width: 100%;
+    }
+    .print-col {
+        flex: 1;
+        width: 50%;
+    }
+    
     table.print-table {
         width: 100%;
         border-collapse: collapse;
-        font-size: 11px !important; 
+        font-size: 10px !important;  /* Ainda menor e mais compacto */
         color: #000000 !important;
         font-family: 'IBM Plex Sans', sans-serif;
-        line-height: 1.1 !important;
+        line-height: 1.05 !important;
     }
     table.print-table th, table.print-table td {
         border: 1px solid #000000 !important;
-        padding: 3px 5px !important; 
+        padding: 2px 4px !important; /* Espaçamento mínimo */
         text-align: left;
         color: #000000 !important;
         background-color: #ffffff !important;
@@ -221,6 +229,10 @@ div[data-testid="stVerticalBlockBorderWrapper"]:hover {
         font-weight: bold;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
+    }
+    table.print-table tr {
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
     }
 }
 @media screen {
@@ -798,21 +810,31 @@ elif perfil_navegacao == "Visão das Lojas":
                 key=f"loja_editor_{st.session_state['reset_counter']}"
             )
 
-        # --- TABELA OCULTA PARA IMPRESSÃO COMPLETA E RESUMIDA ---
+        # --- TABELA OCULTA PARA IMPRESSÃO COMPLETA E RESUMIDA (2 COLUNAS) ---
         df_imprimir = df_editado.copy()
         df_imprimir["Código"] = df_imprimir["Código"].fillna(0).astype(int).astype(str)
         df_imprimir = df_imprimir.rename(columns={"Tipo": "Setor", "Estoque": "Est.", "Qtde": "Ped."})
         
-        html_table = df_imprimir.to_html(index=False, classes="print-table")
+        # Divide a tabela em duas partes
+        meio = (len(df_imprimir) // 2) + (len(df_imprimir) % 2)
+        df1 = df_imprimir.iloc[:meio]
+        df2 = df_imprimir.iloc[meio:]
+        
+        html1 = df1.to_html(index=False, classes="print-table")
+        html2 = df2.to_html(index=False, classes="print-table") if not df2.empty else ""
+        
         st.markdown(f"""
         <div id="print-section">
             <h2 style="color: black; margin-bottom: 10px; text-align: center; border-bottom: 2px solid black; padding-bottom: 5px;">
                 Resumo do Pedido — {loja_selecionada} ({id_loja})
             </h2>
-            {html_table}
+            <div class="print-container">
+                <div class="print-col">{html1}</div>
+                <div class="print-col">{html2}</div>
+            </div>
         </div>
         """, unsafe_allow_html=True)
-        # --------------------------------------------
+        # --------------------------------------------------------------------
 
         itens_com_pedido = int((df_editado["Qtde"] > 0).sum())
         total_itens      = len(df_editado)
