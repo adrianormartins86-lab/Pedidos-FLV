@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import io
+import streamlit.components.v1 as components
 from streamlit_gsheets import GSheetsConnection
 
 # ─────────────────────────────────────────────
@@ -147,6 +148,51 @@ div[data-testid="stVerticalBlockBorderWrapper"]:hover {
 .topbar-left { display: flex; align-items: center; gap: 12px; }
 .topbar-title { font-size: 18px; font-weight: 700; color: var(--text-header); }
 .topbar-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+/* ─────────────────────────────────────────────
+   CONFIGURAÇÕES ESPECÍFICAS PARA IMPRESSÃO
+   ───────────────────────────────────────────── */
+@media print {
+    .stApp, .main, body, html {
+        background-color: #ffffff !important;
+        color: #000000 !important;
+        background-image: none !important;
+    }
+    header, [data-testid="stSidebar"], [data-testid="stDataEditor"], 
+    .stButton, [data-testid="stMetric"], .topbar-loja, hr, 
+    div[data-testid="stVerticalBlockBorderWrapper"], .stAlert {
+        display: none !important;
+    }
+    #print-section {
+        display: block !important;
+        width: 100% !important;
+    }
+    table.print-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+        color: #000000 !important;
+        font-family: 'IBM Plex Sans', sans-serif;
+    }
+    table.print-table th, table.print-table td {
+        border: 1px solid #000000 !important;
+        padding: 6px !important;
+        text-align: left;
+        color: #000000 !important;
+        background-color: #ffffff !important;
+    }
+    table.print-table th {
+        background-color: #e0e0e0 !important;
+        font-weight: bold;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+}
+@media screen {
+    #print-section {
+        display: none !important;
+    }
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -355,21 +401,18 @@ conn = st.connection("gsheets", type=GSheetsConnection)
 
 @st.cache_data(ttl=15)
 def carregar_banco():
-    # Lê as abas
     df_prod = conn.read(worksheet="Produtos")
     df_ped = conn.read(worksheet="Pedidos")
     df_est = conn.read(worksheet="Estoque")
 
     mudou_algo = False
 
-    # Inicializa Produtos se estiver vazio
     if df_prod.empty or "Código" not in df_prod.columns:
         df_prod = pd.DataFrame(produtos_iniciais)
         for loja in LOJAS: df_prod[loja] = True
         conn.update(worksheet="Produtos", data=df_prod)
         mudou_algo = True
 
-    # Inicializa Pedidos se estiver vazio
     if df_ped.empty or "Código" not in df_ped.columns:
         df_ped = pd.DataFrame(columns=["Código"] + LOJAS + ["R$Preço", "OBS:"])
         df_ped["Código"] = df_prod["Código"]
@@ -379,7 +422,6 @@ def carregar_banco():
         conn.update(worksheet="Pedidos", data=df_ped)
         mudou_algo = True
 
-    # Inicializa Estoque se estiver vazio
     if df_est.empty or "Código" not in df_est.columns:
         df_est = pd.DataFrame(columns=["Código"] + LOJAS)
         df_est["Código"] = df_prod["Código"]
@@ -387,7 +429,6 @@ def carregar_banco():
         conn.update(worksheet="Estoque", data=df_est)
         mudou_algo = True
 
-    # --- Sincronização Automática (Se adicionarem produtos no catálogo) ---
     novos_ped = df_prod[~df_prod["Código"].isin(df_ped["Código"])]["Código"]
     if not novos_ped.empty:
         df_n_ped = pd.DataFrame({"Código": novos_ped})
@@ -406,7 +447,6 @@ def carregar_banco():
         conn.update(worksheet="Estoque", data=df_est)
         mudou_algo = True
 
-    # --- Garantia de Tipos (Evita que o Sheets transforme número em texto) ---
     for loja in LOJAS:
         if loja in df_ped.columns: df_ped[loja] = pd.to_numeric(df_ped[loja], errors='coerce').fillna(0).astype(int)
         if loja in df_est.columns: df_est[loja] = pd.to_numeric(df_est[loja], errors='coerce').fillna(0).astype(int)
@@ -415,16 +455,13 @@ def carregar_banco():
     if "R$Preço" in df_ped.columns: df_ped["R$Preço"] = pd.to_numeric(df_ped["R$Preço"], errors='coerce').fillna(0.0)
     if "OBS:" in df_ped.columns: df_ped["OBS:"] = df_ped["OBS:"].fillna("").astype(str)
 
-    # Se alterou a estrutura recarrega para ter os tipos perfeitos
     if mudou_algo:
         st.cache_data.clear()
 
     return df_prod, df_ped, df_est
 
-# Carregamento Principal
 df_produtos, df_pedidos, df_estoque = carregar_banco()
 
-# Gera a lista de Nomes e Fornecedores baseada no banco recém carregado
 LISTA_NOMES_PRODUTOS = [str(x) for x in df_produtos['Descrição'].unique()]
 
 lista_cfg = []
@@ -468,8 +505,6 @@ if st.session_state['usuario_logado'] is None:
 
             usuarios_permitidos = ["Selecione..."] + ["Administrador"] + LOJAS
             usuario_selecionado = st.selectbox("👤 Usuário de acesso:", usuarios_permitidos)
-            
-            # Autocomplete OFF adicionado aqui para evitar sugestões do Chrome
             senha_digitada = st.text_input("🔑 Senha de acesso:", type="password", autocomplete="off")
 
             st.write("<br>", unsafe_allow_html=True)
@@ -598,7 +633,6 @@ if perfil_navegacao == "Separação e Fechamento":
         cols_order = ["Código", "Descrição", "Tipo"] + LOJAS + ["TOTAL GERAL", "R$Preço", "OBS:"]
         df_final = df_final[cols_order]
 
-        # REMOVE A COLUNA TIPO QUANDO O FILTRO É ATIVADO
         if filtro_setor != "Todos":
             df_final = df_final[df_final["Tipo"] == filtro_setor].reset_index(drop=True)
             df_final = df_final.drop(columns=["Tipo"])
@@ -611,7 +645,6 @@ if perfil_navegacao == "Separação e Fechamento":
             "OBS:":        st.column_config.TextColumn("OBS:", width=200)
         }
         
-        # SÓ INCLUI A COLUNA TIPO NO CONFIG SE ELA EXISTIR NO DATAFRAME
         if "Tipo" in df_final.columns:
             col_cfg["Tipo"] = st.column_config.TextColumn("Setor", width=100, disabled=True)
             
@@ -629,7 +662,6 @@ if perfil_navegacao == "Separação e Fechamento":
 
         with col_salvar:
             if st.button("💾 Salvar Alterações", type="primary", use_container_width=True):
-                # Puxa o banco fresco pra não sobrescrever dados
                 _, df_ped_fresco, _ = carregar_banco()
                 for _, row in df_editado_admin.iterrows():
                     mask = df_ped_fresco["Código"] == row["Código"]
@@ -655,16 +687,12 @@ if perfil_navegacao == "Separação e Fechamento":
                 df_export = df_editado_admin.copy()
                 df_export = df_export.rename(columns=MAPA_LOJAS)
                 
-                # ZERAR OS VALORES NUMÉRICOS EXATOS 0 e 0.0 PARA CÉLULAS VAZIAS NO EXCEL
                 df_export = df_export.replace({0: "", 0.0: ""})
-                
                 idx_ultima_loja = df_export.columns.get_loc('298')
                 
-                # CRIAR AS COLUNAS DE ANÁLISE COM NOMES VAZIOS E ÚNICOS (usando espaços em branco)
                 for i in range(1, 7):
                     df_export.insert(idx_ultima_loja + i, " " * i, "")
                 
-                # VERIFICAR SE O TIPO ESTÁ LÁ ANTES DE DEFINIR A ORDEM PARA EXPORTAÇÃO
                 base_cols = ["Código", "Descrição"]
                 if "Tipo" in df_export.columns:
                     base_cols.append("Tipo")
@@ -726,7 +754,6 @@ elif perfil_navegacao == "Visão das Lojas":
             "Qtde":           st.column_config.NumberColumn("🛒 Qtde", width=120, min_value=0, step=1)
         }
         
-        # Colunas laterais criadas para não esticar a tabela
         _, col_tabela, _ = st.columns([1, 4, 1])
         
         with col_tabela:
@@ -736,16 +763,36 @@ elif perfil_navegacao == "Visão das Lojas":
                 key=f"loja_editor_{st.session_state['reset_counter']}"
             )
 
+        # --- TABELA OCULTA PARA IMPRESSÃO COMPLETA ---
+        df_imprimir = df_editado.copy()
+        df_imprimir = df_imprimir.rename(columns={"Tipo": "Setor", "Qtde": "Quantidade"})
+        html_table = df_imprimir.to_html(index=False, classes="print-table")
+        st.markdown(f"""
+        <div id="print-section">
+            <h2 style="color: black; margin-bottom: 15px; text-align: center; border-bottom: 2px solid black; padding-bottom: 10px;">
+                Resumo do Pedido — {loja_selecionada} ({id_loja})
+            </h2>
+            {html_table}
+        </div>
+        """, unsafe_allow_html=True)
+        # --------------------------------------------
+
         itens_com_pedido = int((df_editado["Qtde"] > 0).sum())
         total_itens      = len(df_editado)
         total_unidades   = int(df_editado["Qtde"].sum())
         pct              = round(itens_com_pedido / total_itens * 100) if total_itens else 0
 
         st.divider()
-        m1, m2, m3, _, col_btn = st.columns([2.5, 2.2, 1.8, 0.5, 3])
+        m1, m2, m3, col_print, col_btn = st.columns([2.5, 2.2, 1.8, 1.5, 3])
         with m1: st.metric("Itens preenchidos (Pedido)", f"{itens_com_pedido} / {total_itens}")
         with m2: st.metric("Total de unidades", total_unidades)
         with m3: st.metric("Cobertura", f"{pct}%")
+        
+        with col_print:
+            st.write("<br>", unsafe_allow_html=True)
+            if st.button("🖨️ Imprimir", use_container_width=True):
+                components.html("<script>window.parent.print();</script>", height=0)
+                
         with col_btn:
             st.write("<br>", unsafe_allow_html=True)
             if st.button("💾 Salvar Pedido da Semana", type="primary", use_container_width=True):
@@ -781,7 +828,6 @@ elif perfil_navegacao == "Visão Fornecedores (Ademilto)":
     df_base_pedidos["Total"] = df_base_pedidos[LOJAS].sum(axis=1)
 
     df_consolidado = pd.merge(df_base_produtos, df_base_pedidos[["Código", "Total", "R$Preço"]], on="Código", how="inner")
-    
     nomes_fornecedores = df_fornecedores_config["Fornecedor"].unique()
     
     for i in range(0, len(nomes_fornecedores), 2):
@@ -792,14 +838,12 @@ elif perfil_navegacao == "Visão Fornecedores (Ademilto)":
             
             with cols[j]:
                 with st.container(border=True):
-                    
                     st.markdown('<div class="title-input">', unsafe_allow_html=True)
                     st.text_input("Fornecedor", value=f"🛒 {fornecedor}", label_visibility="collapsed", key=f"title_{fornecedor}_{st.session_state['reset_counter']}")
                     st.markdown('</div>', unsafe_allow_html=True)
                     
                     if fornecedor in FORNECEDORES_ESPECIAIS_LINHA:
                         df_ped_esp = df_base_pedidos[df_base_pedidos["Código"].isin(codigos_do_fornecedor)]
-                        
                         dict_lojas = {"Visão": LOJAS + ["TOTAL"]}
                         col_configs_especial = {"Visão": st.column_config.TextColumn("Visão", disabled=False)}
                         
@@ -821,7 +865,6 @@ elif perfil_navegacao == "Visão Fornecedores (Ademilto)":
                             col_configs_especial[nome_col] = st.column_config.NumberColumn(nome_col, format="%d", disabled=False)
                             
                         df_especial = pd.DataFrame(dict_lojas)
-                        
                         altura_esp = int((len(df_especial) + 2) * 36) + 5
                         
                         st.data_editor(
@@ -841,7 +884,6 @@ elif perfil_navegacao == "Visão Fornecedores (Ademilto)":
                         df_exibicao = df_fornecedor[["Cód", "Produtos", "Total", "R$ Preço", "R$ Total"]].copy()
 
                         df_exibicao['Produtos'] = pd.Categorical(df_exibicao['Produtos'], categories=LISTA_NOMES_PRODUTOS)
-
                         altura_dinamica = int((len(df_exibicao) + 2) * 36) + 5
                         
                         col_cfg_forn = {
@@ -909,7 +951,6 @@ elif perfil_navegacao == "Catálogo de Produtos":
         col_atualizar, col_info, _ = st.columns([2, 4, 4])
         with col_atualizar:
             if st.button("🔄 Atualizar Catálogo", type="primary", use_container_width=True):
-                # Salva o catálogo na nuvem. A sincronização de abas ocorre no próximo load automático
                 conn.update(worksheet="Produtos", data=df_cat_editado)
                 st.cache_data.clear()
                 st.success("✅ Catálogo e permissões atualizados para todas as lojas!")
