@@ -702,42 +702,58 @@ def _gerar_excel_formatado(df_editado_admin, filtro_setor):
     for ri, (_, row) in enumerate(df_exp.iterrows(), DATA_START):
         row_bg = GREEN_ROW if (ri - DATA_START) % 2 == 0 else WHITE_ROW
 
-        for ci, col_name in enumerate(cols, 1):
-            raw = row[col_name]
-            # Zera vira célula vazia
-            if raw == 0 or raw == 0.0 or str(raw).strip() in ("0", "0.0", "nan", ""):
-                raw = None
+       for ci, col_name in enumerate(cols, 1):
+    raw = row[col_name]
 
-            cell = ws.cell(row=ri, column=ci, value=raw)
+    # Zera vira célula vazia
+    if raw == 0 or raw == 0.0 or str(raw).strip() in ("0", "0.0", "nan", ""):
+        raw = None
 
-# TUDO EM NEGRITO
-cell.font = Font(
-    name="Arial",
-    size=9,
-    bold=True
-)
+    cell = ws.cell(row=ri, column=ci, value=raw)
 
-cell.border = brd
+    # TUDO EM NEGRITO
+    cell.font = Font(
+        name="Arial",
+        size=9,
+        bold=True
+    )
 
-if col_name in (prod_col, "Descrição", "PRODUTOS MOLICENTER"):
-    cell.alignment = Alignment(horizontal="left", vertical="center")
-else:
-    cell.alignment = Alignment(horizontal="center", vertical="center")
-            else:
-                cell.alignment = Alignment(horizontal="center", vertical="center")
+    cell.border = brd
 
-            if col_name == tot_col:
-                cell.value = f'=IF(SUM(C{ri}:P{ri})=0,"",SUM(C{ri}:P{ri}))'
+    if col_name in (prod_col, "Descrição", "PRODUTOS MOLICENTER"):
+        cell.alignment = Alignment(
+            horizontal="left",
+            vertical="center"
+        )
+    else:
+        cell.alignment = Alignment(
+            horizontal="center",
+            vertical="center"
+        )
 
-                cell.fill = PatternFill("solid", start_color=TOTAL_BG)
-                cell.font = Font(name="Arial", size=9, bold=True)
-                            
-            elif col_name == pre_col:
-                cell.fill = PatternFill("solid", start_color=PRICE_BG)
-                if raw is not None:
-                  cell.number_format = '[$R$-pt-BR] #,##0.00'
-            else:
-                cell.fill = PatternFill("solid", start_color=row_bg)
+    if col_name == tot_col:
+        cell.value = f'=IF(SUM(C{ri}:P{ri})=0,"",SUM(C{ri}:P{ri}))'
+
+        cell.fill = PatternFill(
+            "solid",
+            start_color=TOTAL_BG
+        )
+
+    elif col_name == pre_col:
+
+        cell.fill = PatternFill(
+            "solid",
+            start_color=PRICE_BG
+        )
+
+        if raw is not None:
+            cell.number_format = '[$R$-pt-BR] #,##0.00'
+
+    else:
+        cell.fill = PatternFill(
+            "solid",
+            start_color=row_bg
+        )
 
     # ── Larguras das colunas ────────────────────────────────────────────────
     widths = {
