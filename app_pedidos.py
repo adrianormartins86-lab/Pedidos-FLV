@@ -636,7 +636,7 @@ with st.sidebar:
 def _gerar_excel_formatado(df_editado_admin, filtro_setor):
     """
     Recebe o DataFrame já editado e o filtro de setor.
-    Retorna bytes do .xlsx pronto para download.
+    Retorna bytes do .xlsx com todo o texto em negrito e cores intercaladas por COLUNA (A até Q).
     """
     HDR_BG    = "C55A11"   # laranja escuro — cabeçalho
     HDR_FG    = "FFFFFF"   # branco
@@ -672,6 +672,7 @@ def _gerar_excel_formatado(df_editado_admin, filtro_setor):
 
     store_cols  = NOVOS_NOMES_LOJAS              # ["291"…"298"]
     spacer_cols = [" " * i for i in range(1, 7)] # 6 colunas vazias ocultas
+ 
     for s in spacer_cols:
         df_exp[s] = ""
 
@@ -700,8 +701,7 @@ def _gerar_excel_formatado(df_editado_admin, filtro_setor):
 
     # ── Dados ──────────────────────────────────────────────────────────────
     for ri, (_, row) in enumerate(df_exp.iterrows(), DATA_START):
-        row_bg = GREEN_ROW if (ri - DATA_START) % 2 == 0 else WHITE_ROW
-
+        
         for ci, col_name in enumerate(cols, 1):
             raw = row[col_name]
             # Zera vira célula vazia
@@ -709,7 +709,7 @@ def _gerar_excel_formatado(df_editado_admin, filtro_setor):
                 raw = None
 
             cell = ws.cell(row=ri, column=ci, value=raw)
-            cell.font   = Font(name="Arial", size=9, bold=True)
+            cell.font   = Font(name="Arial", size=9, bold=True) # Mantido em negrito
             cell.border = brd
 
             if col_name in (prod_col, "Descrição", "PRODUTOS MOLICENTER"):
@@ -717,18 +717,27 @@ def _gerar_excel_formatado(df_editado_admin, filtro_setor):
             else:
                 cell.alignment = Alignment(horizontal="center", vertical="center")
 
+            # Regra da coluna TOTAL
             if col_name == tot_col:
                 cell.value = f'=IF(SUM(C{ri}:P{ri})=0,"",SUM(C{ri}:P{ri}))'
-
                 cell.fill = PatternFill("solid", start_color=TOTAL_BG)
                 cell.font = Font(name="Arial", size=9, bold=True)
                             
+            # Regra da coluna PREÇO
             elif col_name == pre_col:
                 cell.fill = PatternFill("solid", start_color=PRICE_BG)
                 if raw is not None:
-                  cell.number_format = '[$R$-pt-BR] #,##0.00'
+                    cell.number_format = '[$R$-pt-BR] #,##0.00'
+            
+            # Regra para as demais colunas (Intercalando por Coluna de A até Q)
             else:
-                cell.fill = PatternFill("solid", start_color=row_bg)
+                if ci <= 17:  # Coluna 1 (A) até 17 (Q)
+                    # Se for ímpar (A, C, E...) fica Verde. Se for par (B, D, F...) fica Branco.
+                    col_bg = GREEN_ROW if ci % 2 != 0 else WHITE_ROW
+                else:
+                    col_bg = WHITE_ROW  # Colunas após a Q (como a coluna de OBS)
+                
+                cell.fill = PatternFill("solid", start_color=col_bg)
 
     # ── Larguras das colunas ────────────────────────────────────────────────
     widths = {
