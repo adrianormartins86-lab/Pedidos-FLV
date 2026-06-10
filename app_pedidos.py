@@ -150,7 +150,7 @@ div[data-testid="stVerticalBlockBorderWrapper"]:hover {
 .topbar-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
 
 /* ─────────────────────────────────────────────
-   CONFIGURAÇÕES ESPECÍFICAS PARA IMPRESSÃO (NOVO FIX)
+   CONFIGURAÇÕES ESPECÍFICAS PARA IMPRESSÃO (NOVO FIX - TOPO DA PÁGINA)
    ───────────────────────────────────────────── */
 @media print {
     @page { margin: 10mm; }
@@ -159,33 +159,38 @@ div[data-testid="stVerticalBlockBorderWrapper"]:hover {
         background-color: #ffffff !important;
         color: #000000 !important;
         background-image: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
     }
     
-    /* 1. Oculta cabeçalhos e barras de navegação */
-    header, [data-testid="stSidebar"] {
+    /* 1. REMOVE O ESPAÇO GIGANTE DO TOPO DO STREAMLIT */
+    .main .block-container, [data-testid="stAppViewBlockContainer"] {
+        padding-top: 0 !important;
+        margin-top: 0 !important;
+    }
+    
+    /* 2. Oculta cabeçalhos e barras de navegação */
+    header, [data-testid="stSidebar"], [data-testid="stHeader"] {
         display: none !important;
     }
     
-    /* 2. OCULTAÇÃO AGRESSIVA: Desativa a tabela escura (DataEditor), selects e botões */
-    [data-testid="stDataEditor"], 
-    [data-testid="stSelectbox"], 
-    [data-testid="stMetric"], 
-    [data-testid="stButton"],
-    .stAlert, .topbar-loja, hr, iframe, canvas {
-        display: none !important;
-        opacity: 0 !important;
-        height: 0 !important;
-    }
-    
-    /* 3. Apaga a "caixa" invisível que fica em volta da tabela escura */
-    [data-testid="stElementContainer"]:has([data-testid="stDataEditor"]) {
+    /* 3. OCULTAÇÃO DOS CONTAINERS "FANTASMAS" QUE DEIXAVAM BURACO NO TOPO */
+    [data-testid="stElementContainer"]:has([data-testid="stDataEditor"]),
+    [data-testid="stElementContainer"]:has(.topbar-loja),
+    [data-testid="stElementContainer"]:has([data-testid="stMetric"]),
+    [data-testid="stElementContainer"]:has(button),
+    [data-testid="stHorizontalBlock"],
+    div[data-testid="stVerticalBlockBorderWrapper"],
+    hr, .stAlert, .stInfo {
         display: none !important;
     }
     
-    /* 4. Garante que a NOSSA tabela de impressão seja a única coisa na tela */
+    /* 4. Garante que a tabela de impressão suba para o topo */
     #print-section {
         display: block !important;
         width: 100% !important;
+        margin-top: 0 !important;
+        padding-top: 0 !important;
     }
     
     #print-section h2 {
