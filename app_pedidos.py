@@ -752,7 +752,7 @@ if perfil_navegacao == "Separação e Fechamento":
                 if filtro_setor in ["Box", "Pedra"]:
                     df_export = df_export.rename(columns={
                         "Código": "CODIGO",
-                        "Descrição": "PRODUTOS MOLICENTER"
+                        "Descrição": "PRODUTOS MOLICENTER",
                         "TOTAL GERAL": "TOTAL",       # <--- NOVA LINHA
                         "R$Preço": "PREÇO"            # <--- NOVA LINHA
                     })
