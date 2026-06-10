@@ -717,25 +717,15 @@ def _gerar_excel_formatado(df_editado_admin, filtro_setor):
             else:
                 cell.alignment = Alignment(horizontal="center", vertical="center")
 
-          if col_name == tot_col:
-
-    # Soma das colunas D até K
-    cell.value = f'=IF(SUM(D{ri}:K{ri})=0,"",SUM(D{ri}:K{ri}))'
-
-    cell.fill = PatternFill("solid", start_color=TOTAL_BG)
-    cell.font = Font(name="Arial", size=9, bold=True)
-
-# PREÇO
-elif col_name == pre_col:
-
-    cell.fill = PatternFill("solid", start_color=PRICE_BG)
-
-    if raw is not None:
-        cell.number_format = '[$R$-pt-BR] #,##0.00'
-
-# DEMAIS COLUNAS
-else:
-    cell.fill = PatternFill("solid", start_color=row_bg)
+            if col_name == tot_col:
+                cell.fill = PatternFill("solid", start_color=TOTAL_BG)
+                cell.font = Font(name="Arial", size=9, bold=True)
+            elif col_name == pre_col:
+                cell.fill = PatternFill("solid", start_color=PRICE_BG)
+                if raw is not None:
+                  cell.number_format = '[$R$-pt-BR] #,##0.00'
+            else:
+                cell.fill = PatternFill("solid", start_color=row_bg)
 
     # ── Larguras das colunas ────────────────────────────────────────────────
     widths = {
