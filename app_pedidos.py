@@ -152,62 +152,102 @@ div[data-testid="stVerticalBlockBorderWrapper"]:hover {
 .topbar-title { font-size: 18px; font-weight: 700; color: var(--text-header); }
 .topbar-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
 
+/* REGRAS DE IMPRESSÃO - FORÇANDO A TELA BRANCA E AS TABELAS */
 @media print {
-    @page { margin: 10mm; }
+    @page { 
+        margin: 5mm 5mm; /* Margens mínimas forçadas */
+        size: A4 portrait; /* Força o formato A4 em pé */
+    }
     .stApp, .main, body, html {
         background-color: #ffffff !important;
-        color: #000000 !important;
         background-image: none !important;
+        color: #000000 !important;
         padding: 0 !important;
         margin: 0 !important;
+        font-size: 11px !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
     }
-    .main .block-container, [data-testid="stAppViewBlockContainer"] {
-        padding-top: 0 !important;
-        margin-top: 0 !important;
+    header, [data-testid="stSidebar"], [data-testid="stHeader"] { 
+        display: none !important; 
     }
-    header, [data-testid="stSidebar"], [data-testid="stHeader"] { display: none !important; }
-    [data-testid="stElementContainer"]:has([data-testid="stDataEditor"]),
-    [data-testid="stElementContainer"]:has(.topbar-loja),
-    [data-testid="stElementContainer"]:has([data-testid="stMetric"]),
-    [data-testid="stElementContainer"]:has(button),
+    
+    /* DESLIGA TUDO O QUE FOR DO STREAMLIT NA TELA */
+    [data-testid="stElementContainer"],
     [data-testid="stHorizontalBlock"],
     div[data-testid="stVerticalBlockBorderWrapper"],
-    hr, .stAlert, .stInfo { display: none !important; }
+    .page-header,
+    hr, .stAlert, .stInfo {
+        display: none !important;
+    }
+    
+    /* RELIGA APENAS A CAIXA QUE CONTÉM O PRINT-SECTION */
+    [data-testid="stElementContainer"]:has(#print-section) {
+        display: block !important;
+        width: 100% !important;
+    }
+    
+    /* FORMATAÇÃO DO PAPEL */
     #print-section {
         display: block !important;
         width: 100% !important;
-        margin-top: 0 !important;
-        padding-top: 0 !important;
+        max-width: 100% !important;
     }
     #print-section h2 {
-        font-size: 16px !important;
-        margin: 0 0 10px 0 !important;
-        padding-bottom: 5px !important;
+        font-size: 14px !important;
+        margin: 0 0 5px 0 !important;
+        padding-bottom: 3px !important;
         border-bottom: 1px solid #000 !important;
         color: #000 !important;
+        display: block !important;
+        text-align: center !important;
     }
-    .print-container { display: flex; gap: 15px; align-items: flex-start; width: 100%; }
-    .print-col { flex: 1; width: 50%; }
+    .print-container { 
+        width: 100% !important; 
+        display: flex !important;
+        flex-direction: row !important;
+        justify-content: space-between !important;
+        align-items: flex-start !important;
+        gap: 10px !important; /* Espaço fixo entre as duas colunas */
+    }
+    
+    /* FORÇANDO A LARGURA EXATA DAS TABELAS PARA NÃO ENCOLHER */
+    .print-col {
+        width: 49% !important; 
+        flex: 0 0 49% !important;
+    }
+
     table.print-table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 10px !important;
+        width: 100% !important; 
+        border-collapse: collapse !important;
+        font-size: 10px !important; 
         color: #000000 !important;
-        font-family: 'IBM Plex Sans', sans-serif;
-        line-height: 1.05 !important;
+        font-family: 'IBM Plex Sans', sans-serif !important;
+        line-height: 1.1 !important;
+        display: table !important;
+        table-layout: fixed !important; 
     }
     table.print-table th, table.print-table td {
         border: 1px solid #000000 !important;
         padding: 2px 4px !important;
-        text-align: left;
+        text-align: left !important;
         color: #000000 !important;
         background-color: #ffffff !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        white-space: nowrap !important; 
     }
+    
+    table.print-table th:nth-child(1), table.print-table td:nth-child(1) { width: 12% !important; } /* Cód */
+    table.print-table th:nth-child(2), table.print-table td:nth-child(2) { width: 52% !important; } /* Descrição */
+    table.print-table th:nth-child(3), table.print-table td:nth-child(3) { width: 12% !important; } /* Setor */
+    table.print-table th:nth-child(4), table.print-table td:nth-child(4) { width: 12% !important; } /* Est. */
+    table.print-table th:nth-child(5), table.print-table td:nth-child(5) { width: 12% !important; text-align: center !important;} /* Ped. */
+
     table.print-table th {
         background-color: #e0e0e0 !important;
-        font-weight: bold;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
+        font-weight: bold !important;
+        text-align: center !important;
     }
     table.print-table tr { break-inside: avoid !important; page-break-inside: avoid !important; }
 }
