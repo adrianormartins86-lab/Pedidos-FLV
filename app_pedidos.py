@@ -12,7 +12,7 @@ from openpyxl.utils import get_column_letter
 # ─────────────────────────────────────────────
 st.set_page_config(
     page_title="Gestão de Pedidos - FLV Normal",
-    page_icon="🛒",
+    page_icon="🍌",
     layout="wide",
     initial_sidebar_state="expanded"
 )
