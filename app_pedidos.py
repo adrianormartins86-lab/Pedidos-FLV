@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import io
+import datetime
 import streamlit.components.v1 as components
 from streamlit_gsheets import GSheetsConnection
 import openpyxl
@@ -234,11 +235,13 @@ div[data-testid="stVerticalBlockBorderWrapper"]:hover {
         white-space: nowrap !important; 
     }
     
+    /* Configuração de colunas de impressão ajustada para 6 colunas (com a Média) */
     table.print-table th:nth-child(1), table.print-table td:nth-child(1) { width: 10% !important; } /* Cód */
-    table.print-table th:nth-child(2), table.print-table td:nth-child(2) { width: 54% !important; } /* Descrição */
-    table.print-table th:nth-child(3), table.print-table td:nth-child(3) { width: 12% !important; } /* Setor */
+    table.print-table th:nth-child(2), table.print-table td:nth-child(2) { width: 44% !important; } /* Descrição */
+    table.print-table th:nth-child(3), table.print-table td:nth-child(3) { width: 10% !important; } /* Setor */
     table.print-table th:nth-child(4), table.print-table td:nth-child(4) { width: 12% !important; } /* Est. */
-    table.print-table th:nth-child(5), table.print-table td:nth-child(5) { width: 12% !important; text-align: center !important;} /* Ped. */
+    table.print-table th:nth-child(5), table.print-table td:nth-child(5) { width: 12% !important; text-align: center !important;} /* Média */
+    table.print-table th:nth-child(6), table.print-table td:nth-child(6) { width: 12% !important; text-align: center !important;} /* Ped. */
 
     table.print-table th {
         background-color: #e0e0e0 !important;
@@ -460,6 +463,14 @@ conn = st.connection("gsheets", type=GSheetsConnection)
 def carregar_banco():
     df_prod = conn.read(worksheet="Produtos")
     df_ped = conn.read(worksheet="Pedidos")
+    
+    # Aba de Médias Dinâmica
+    try:
+        df_media_90 = conn.read(worksheet="Normal_90d")
+        if df_media_90.empty:
+            df_media_90 = pd.DataFrame(columns=["loja", "codigo", "qtde"])
+    except Exception:
+        df_media_90 = pd.DataFrame(columns=["loja", "codigo", "qtde"])
 
     mudou_algo = False
     
@@ -544,9 +555,9 @@ def carregar_banco():
     if mudou_algo:
         st.cache_data.clear()
 
-    return df_prod, df_ped
+    return df_prod, df_ped, df_media_90
 
-df_produtos, df_pedidos = carregar_banco()
+df_produtos, df_pedidos, df_media_90 = carregar_banco()
 
 LISTA_NOMES_PRODUTOS = [str(x) for x in df_produtos['Descrição'].unique()]
 
@@ -650,7 +661,7 @@ def modal_zerar_pedidos():
     with c2:
         if st.button("✔️ Sim, zerar tudo", type="primary", use_container_width=True):
             st.session_state['reset_counter'] += 1
-            _, df_ped = carregar_banco()
+            _, df_ped, _ = carregar_banco()
             
             df_ped[LOJAS] = 0
             df_ped["R$Preço"] = 0.0
@@ -913,7 +924,7 @@ if perfil_navegacao == "Separação e Fechamento":
 
         with col_salvar:
             if st.button("💾 Salvar Alterações", type="primary", use_container_width=True):
-                _, df_ped_fresco = carregar_banco()
+                _, df_ped_fresco, _ = carregar_banco()
                 for _, row in df_editado_admin.iterrows():
                     mask = df_ped_fresco["Código"] == row["Código"]
                     for loja in LOJAS:
@@ -981,15 +992,16 @@ elif perfil_navegacao == "Visão das Lojas":
     df_loja = df_visiveis[["Cód.Prime", "Código", "Descrição", "Tipo"]].copy()
     
     # ------------------ ESTOQUE VIA POSTGRESQL ----------------------
+    mapa_banco_erp = {
+        "Loja 01": "001", "Loja 02": "002", "Loja 03": "003",
+        "Loja 04": "004", "Loja 05": "005", "Loja 06": "006",
+        "Loja 07": "007", "Loja 08": "008"
+    }
+    cod_empresa_banco = mapa_banco_erp.get(loja_selecionada, "001")
+
     try:
         conn_pg = st.connection("banco_erp", type="sql")
-        mapa_banco_erp = {
-            "Loja 01": "001", "Loja 02": "002", "Loja 03": "003",
-            "Loja 04": "004", "Loja 05": "005", "Loja 06": "006",
-            "Loja 07": "007", "Loja 08": "008"
-        }
-        cod_empresa_banco = mapa_banco_erp.get(loja_selecionada, "001")
-
+        
         query_erp = f"""
             SELECT cade_codempresa,
                    cade_codigo,
@@ -1026,16 +1038,29 @@ elif perfil_navegacao == "Visão das Lojas":
     df_qtd = df_pedidos[["Código", loja_selecionada]].rename(columns={loja_selecionada: "Qtde"})
     df_loja = pd.merge(df_loja, df_qtd, on="Código", how="left")
     
+    # --- CRUZAMENTO DA MÉDIA 90 DIAS ---------------------------------
+    df_media_loja = df_media_90[df_media_90['loja'].astype(str).str.zfill(3) == cod_empresa_banco.zfill(3)].copy()
+    df_media_loja = df_media_loja.rename(columns={"codigo": "Cód.Prime", "qtde": "Média 90d"})
+    df_media_loja["Cód.Prime"] = pd.to_numeric(df_media_loja["Cód.Prime"], errors='coerce').fillna(0).astype(int)
+
+    df_loja = pd.merge(df_loja, df_media_loja[["Cód.Prime", "Média 90d"]], on="Cód.Prime", how="left")
+    df_loja["Média 90d"] = df_loja["Média 90d"].fillna(0.0).round(2)
+    # -----------------------------------------------------------------
+    
     df_loja["Cód.Prime"] = df_loja["Cód.Prime"].replace(0, None)
+    
+    # Força a ordem exata das colunas: Média entre o Estoque e o Pedido
+    df_loja = df_loja[["Cód.Prime", "Código", "Descrição", "Tipo", "Estoque", "Média 90d", "Qtde"]]
 
     with st.container(border=True):
         col_cfg_loja = {
             "Código":         None, # Esconde o Cód.Iceasa da visão da loja
             "Cód.Prime":      st.column_config.NumberColumn("Cód. Prime", width=70, format="%d", disabled=True),
-            "Descrição":      st.column_config.TextColumn(width=400, disabled=True),
-            "Tipo":           st.column_config.TextColumn("Setor", width=80, disabled=True),
-            "Estoque":        st.column_config.NumberColumn("📦 Estoque", width=100, disabled=True),
-            "Qtde":           st.column_config.NumberColumn("🛒 Pedido", width=100, min_value=0, step=1)
+            "Descrição":      st.column_config.TextColumn(width=340, disabled=True),
+            "Tipo":           st.column_config.TextColumn("Setor", width=70, disabled=True),
+            "Estoque":        st.column_config.NumberColumn("📦 Estoque", width=80, disabled=True),
+            "Média 90d":      st.column_config.NumberColumn("📈 Média 90d", width=90, disabled=True, format="%.2f"),
+            "Qtde":           st.column_config.NumberColumn("🛒 Pedido", width=90, min_value=0, step=1)
         }
         
         df_editado = st.data_editor(
@@ -1048,8 +1073,8 @@ elif perfil_navegacao == "Visão das Lojas":
         df_imprimir = df_editado.copy()
         df_imprimir = df_imprimir.drop(columns=["Cód.Prime"], errors="ignore")
         df_imprimir["Código"] = df_imprimir["Código"].fillna(0).astype(int).astype(str)
-        df_imprimir = df_imprimir.rename(columns={"Código": "Cód", "Tipo": "Setor", "Estoque": "Est.", "Qtde": "Ped."})
-        df_imprimir = df_imprimir[["Cód", "Descrição", "Setor", "Est.", "Ped."]] # Força a ordem exata de antes
+        df_imprimir = df_imprimir.rename(columns={"Código": "Cód", "Tipo": "Setor", "Estoque": "Est.", "Média 90d": "Média", "Qtde": "Ped."})
+        df_imprimir = df_imprimir[["Cód", "Descrição", "Setor", "Est.", "Média", "Ped."]] # Força a ordem exata
         
         meio = (len(df_imprimir) // 2) + (len(df_imprimir) % 2)
         df1 = df_imprimir.iloc[:meio]
@@ -1094,7 +1119,7 @@ elif perfil_navegacao == "Visão das Lojas":
         with col_btn:
             st.write("<br>", unsafe_allow_html=True)
             if st.button("💾 Salvar Pedido da Semana", type="primary", use_container_width=True):
-                _, df_ped_fresco = carregar_banco()
+                _, df_ped_fresco, _ = carregar_banco()
                 
                 for _, row in df_editado.iterrows():
                     mask_ped = df_ped_fresco["Código"] == row["Código"]
@@ -1168,7 +1193,7 @@ elif perfil_navegacao == "Visão Fornecedores (Ademilto)":
                             use_container_width=True, 
                             column_config=col_configs_especial,
                             height=altura_esp,
-                            num_rows="fixed", # Remove a coluna vazia de seleção/índice
+                            num_rows="fixed",
                             key=f"forn_esp_{fornecedor}_{st.session_state['reset_counter']}"
                         )
                     
@@ -1195,7 +1220,7 @@ elif perfil_navegacao == "Visão Fornecedores (Ademilto)":
                             use_container_width=True, 
                             column_config=col_cfg_forn,
                             height=altura_dinamica,
-                            num_rows="fixed", # Remove a coluna vazia de seleção/índice
+                            num_rows="fixed",
                             key=f"forn_{fornecedor}_{st.session_state['reset_counter']}"
                         )
                         
@@ -1225,11 +1250,40 @@ elif perfil_navegacao == "Catálogo de Produtos":
     with st.container(border=True):
         st.caption("➕ Adicione produtos na última linha  •  🗑️ Selecione a linha e pressione **Delete** para remover  •  ✅ Checkboxes controlam visibilidade por loja")
         
-        col_btn1, col_info, _ = st.columns([3, 5, 2])
+        col_btn1, col_btn2, col_info = st.columns([2.5, 2.5, 5])
         with col_btn1:
             btn_salvar = st.button("💾 Salvar Códigos e Catálogo", type="primary", use_container_width=True)
+        with col_btn2:
+            btn_atualizar_90d = st.button("🔄 Atualizar Média 90d", use_container_width=True)
         with col_info:
-            st.info("💡 Digite o Cód. ERP (Prime) ou faça alterações, depois clique em **Salvar**!")
+            st.info("💡 Digite o Cód. ERP e salve, ou clique para extrair a Média de Vendas do ERP!")
+
+        # --- LÓGICA DE ATUALIZAÇÃO DA MÉDIA 90 DIAS POR DIA DA SEMANA ---
+        if btn_atualizar_90d:
+            # 0=Seg, 1=Ter, 2=Qua, 3=Qui, 4=Sex, 5=Sáb, 6=Dom
+            dia_semana = datetime.datetime.today().weekday()
+            
+            if dia_semana == 1:   # Terça-feira
+                nome_view = "python_90dQUAQUI"
+            elif dia_semana == 3: # Quinta-feira
+                nome_view = "python_90dSEXSABDOM"
+            else:                 # Outros dias (Seg, Qua, Sex, Sab, Dom)
+                nome_view = "python_90dDIARIA"
+                
+            with st.spinner(f"⏳ Extraindo vendas ({nome_view}) do ERP. Isso pode demorar alguns segundos..."):
+                try:
+                    conn_pg = st.connection("banco_erp", type="sql")
+                    
+                    query_90d = f'SELECT loja, codigo, qtde FROM "{nome_view}"'
+                    df_nova_media = conn_pg.query(query_90d, ttl=0) # Força rodar na hora
+                    
+                    # Salva no Sheets usando a nova aba Normal_90d
+                    conn.update(worksheet="Normal_90d", data=df_nova_media)
+                    st.cache_data.clear() # Limpa cache pro sistema puxar da planilha
+                    
+                    st.success(f"✅ Média de 90 dias atualizada usando a view '{nome_view}' e salva no Google Sheets com sucesso!")
+                except Exception as e:
+                    st.error(f"⚠️ Ocorreu um erro ao atualizar os dados no ERP: {e}")
 
         df_cat_edit = df_produtos.copy()
         df_cat_edit["Cód.Prime"] = df_cat_edit["Cód.Prime"].replace(0, None)
