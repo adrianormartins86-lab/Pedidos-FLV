@@ -152,7 +152,7 @@ div[data-testid="stVerticalBlockBorderWrapper"]:hover {
 .topbar-title { font-size: 18px; font-weight: 700; color: var(--text-header); }
 .topbar-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
 
-/* REGRAS DE IMPRESSÃO - FORÇANDO A TELA BRANCA E AS TABELAS */
+/* REGRAS DE IMPRESSÃO */
 @media print {
     @page { 
         margin: 5mm 5mm; 
@@ -261,7 +261,6 @@ NOVOS_NOMES_LOJAS = ["291", "292", "293", "294", "295", "296", "297", "298"]
 MAPA_LOJAS = dict(zip(LOJAS, NOVOS_NOMES_LOJAS))
 FORNECEDORES_ESPECIAIS_LINHA = ["BANANA SANTOME", "MELANCIA CARLIN", "MELANCIA MARCINHO", "RODRIGO BATATA"]
 
-# O "Código" aqui no dicionário original representa o Cód.Iceasa
 produtos_iniciais = [
     {"Cód.Prime": None, "Código": 1571, "Descrição": "Abacate Cx 20 Kg", "Tipo": "Box"},
     {"Cód.Prime": None, "Código": 2614, "Descrição": "Abacaxi Doce Mel Cx c/7", "Tipo": "Box"},
@@ -464,6 +463,11 @@ def carregar_banco():
     df_est = conn.read(worksheet="Estoque")
 
     mudou_algo = False
+    
+    # Previne duplicação caso a coluna tenha sido criada com variações de nome no Sheets
+    for col in df_prod.columns:
+        if col.strip().lower() in ["prime", "cód.prime"]:
+            df_prod = df_prod.rename(columns={col: "Cód.Prime"})
 
     if df_prod.empty or "Código" not in df_prod.columns:
         df_prod = pd.DataFrame(produtos_iniciais)
@@ -471,6 +475,7 @@ def carregar_banco():
         conn.update(worksheet="Produtos", data=df_prod)
         mudou_algo = True
         
+    # Garante que as colunas corretas existem em Produtos
     if "Cód.Prime" not in df_prod.columns:
         df_prod.insert(0, "Cód.Prime", None)
         mudou_algo = True
@@ -982,7 +987,9 @@ elif perfil_navegacao == "Visão das Lojas":
         df_erp = conn_pg.query(query_erp, ttl=300)
 
         if not df_erp.empty:
+            df_erp["cade_codigo"] = pd.to_numeric(df_erp["cade_codigo"], errors='coerce').fillna(0).astype(int)
             df_erp = df_erp.rename(columns={"cade_codigo": "Cód.Prime", "estoque": "Estoque"})
+            df_loja["Cód.Prime"] = pd.to_numeric(df_loja["Cód.Prime"], errors='coerce').fillna(0).astype(int)
             df_loja = pd.merge(df_loja, df_erp[["Cód.Prime", "Estoque"]], on="Cód.Prime", how="left")
         else:
             df_loja["Estoque"] = 0
@@ -1203,11 +1210,17 @@ elif perfil_navegacao == "Catálogo de Produtos":
     with st.container(border=True):
         st.caption("➕ Adicione produtos na última linha  •  🗑️ Selecione a linha e pressione **Delete** para remover  •  ✅ Checkboxes controlam visibilidade por loja")
         
+        col_btn1, col_info, _ = st.columns([3, 5, 2])
+        with col_btn1:
+            btn_salvar = st.button("💾 Salvar Códigos e Catálogo", type="primary", use_container_width=True)
+        with col_info:
+            st.info("💡 Digite o Cód. ERP (Prime) ou faça alterações, depois clique em **Salvar**!")
+
         df_cat_edit = df_produtos.copy()
         df_cat_edit["Cód.Prime"] = df_cat_edit["Cód.Prime"].replace(0, None)
 
         config_catalogo = {
-            "Cód.Prime": st.column_config.NumberColumn("Cód. ERP (Prime)", width=100, min_value=0, format="%d"),
+            "Cód.Prime": st.column_config.NumberColumn("Cód. ERP (Prime)", width=120, min_value=0, format="%d"),
             "Código":    st.column_config.NumberColumn("Cód. Iceasa", width=90, required=True, min_value=0, format="%d"),
             "Descrição": st.column_config.TextColumn("Descrição do Item", width=310, required=True),
             "Tipo":      st.column_config.SelectboxColumn("Setor", options=["Box", "Pedra"], width=100, required=True),
@@ -1224,17 +1237,9 @@ elif perfil_navegacao == "Catálogo de Produtos":
             height=580
         )
 
-        st.divider()
-        col_atualizar, col_info, _ = st.columns([2, 4, 4])
-        with col_atualizar:
-            if st.button("🔄 Atualizar Catálogo", type="primary", use_container_width=True):
-                # Limpa nulos no cod prime antes de salvar
-                df_cat_editado["Cód.Prime"] = pd.to_numeric(df_cat_editado["Cód.Prime"], errors='coerce').fillna(0).astype(int)
-                conn.update(worksheet="Produtos", data=df_cat_editado)
-                st.cache_data.clear()
-                st.success("✅ Catálogo e permissões atualizados para todas as lojas!")
-                st.rerun()
-        with col_info:
-            total_prods = len(df_cat_editado)
-            st.info(f"📦 **{total_prods}** produtos cadastrados  •  "
-                    f"**{len(LOJAS)}** lojas configuradas")
+        if btn_salvar:
+            df_cat_editado["Cód.Prime"] = pd.to_numeric(df_cat_editado["Cód.Prime"], errors='coerce').fillna(0).astype(int)
+            conn.update(worksheet="Produtos", data=df_cat_editado)
+            st.cache_data.clear()
+            st.success("✅ Catálogo e permissões atualizados para todas as lojas!")
+            st.rerun()
