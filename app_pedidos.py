@@ -261,7 +261,6 @@ NOVOS_NOMES_LOJAS = ["291", "292", "293", "294", "295", "296", "297", "298"]
 MAPA_LOJAS = dict(zip(LOJAS, NOVOS_NOMES_LOJAS))
 FORNECEDORES_ESPECIAIS_LINHA = ["BANANA SANTOME", "MELANCIA CARLIN", "MELANCIA MARCINHO", "RODRIGO BATATA"]
 
-# O "Código" aqui no dicionário original representa o Cód.Iceasa
 produtos_iniciais = [
     {"Cód.Prime": None, "Código": 1571, "Descrição": "Abacate Cx 20 Kg", "Tipo": "Box"},
     {"Cód.Prime": None, "Código": 2614, "Descrição": "Abacaxi Doce Mel Cx c/7", "Tipo": "Box"},
@@ -464,10 +463,25 @@ def carregar_banco():
 
     mudou_algo = False
     
-    # Previne duplicação caso a coluna tenha sido criada com variações de nome no Sheets
-    for col in df_prod.columns:
-        if col.strip().lower() in ["prime", "cód.prime"]:
-            df_prod = df_prod.rename(columns={col: "Cód.Prime"})
+    # Normalização robusta de nomes de colunas
+    df_prod.columns = df_prod.columns.astype(str).str.strip()
+    df_ped.columns = df_ped.columns.astype(str).str.strip()
+    
+    renames_prod = {}
+    for c in df_prod.columns:
+        cl = c.lower()
+        if cl in ["prime", "cód.prime", "cod.prime", "cód prime", "cod prime"]:
+            renames_prod[c] = "Cód.Prime"
+        elif cl in ["código", "codigo", "cod", "cód", "cód.", "cod.", "cód. iceasa", "cod.iceasa"]:
+            renames_prod[c] = "Código"
+    df_prod = df_prod.rename(columns=renames_prod)
+            
+    renames_ped = {}
+    for c in df_ped.columns:
+        cl = c.lower()
+        if cl in ["código", "codigo", "cod", "cód", "cód.", "cod.", "cód. iceasa", "cod.iceasa"]:
+            renames_ped[c] = "Código"
+    df_ped = df_ped.rename(columns=renames_ped)
 
     if df_prod.empty or "Código" not in df_prod.columns:
         df_prod = pd.DataFrame(produtos_iniciais)
@@ -475,7 +489,6 @@ def carregar_banco():
         conn.update(worksheet="Produtos", data=df_prod)
         mudou_algo = True
         
-    # Garante que as colunas corretas existem em Produtos
     if "Cód.Prime" not in df_prod.columns:
         df_prod.insert(0, "Cód.Prime", None)
         mudou_algo = True
@@ -500,8 +513,13 @@ def carregar_banco():
         mudou_algo = True
 
     for loja in LOJAS:
-        if loja in df_ped.columns: df_ped[loja] = pd.to_numeric(df_ped[loja], errors='coerce').fillna(0).astype(int)
-        if loja in df_prod.columns: df_prod[loja] = df_prod[loja].fillna(False).astype(bool)
+        if loja in df_ped.columns: 
+            df_ped[loja] = pd.to_numeric(df_ped[loja], errors='coerce').fillna(0).astype(int)
+        else: 
+            df_ped[loja] = 0
+            
+        if loja in df_prod.columns: 
+            df_prod[loja] = df_prod[loja].fillna(False).astype(bool)
 
     if "R$Preço" in df_ped.columns: df_ped["R$Preço"] = pd.to_numeric(df_ped["R$Preço"], errors='coerce').fillna(0.0)
     if "OBS:" in df_ped.columns: df_ped["OBS:"] = df_ped["OBS:"].fillna("").astype(str)
@@ -1130,7 +1148,7 @@ elif perfil_navegacao == "Visão Fornecedores (Ademilto)":
                             use_container_width=True, 
                             column_config=col_configs_especial,
                             height=altura_esp,
-                            num_rows="fixed", # Remove a coluna vazia de seleção/índice
+                            num_rows="fixed",
                             key=f"forn_esp_{fornecedor}_{st.session_state['reset_counter']}"
                         )
                     
@@ -1157,7 +1175,7 @@ elif perfil_navegacao == "Visão Fornecedores (Ademilto)":
                             use_container_width=True, 
                             column_config=col_cfg_forn,
                             height=altura_dinamica,
-                            num_rows="fixed", # Remove a coluna vazia de seleção/índice
+                            num_rows="fixed",
                             key=f"forn_{fornecedor}_{st.session_state['reset_counter']}"
                         )
                         
