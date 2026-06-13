@@ -1274,8 +1274,13 @@ elif perfil_navegacao == "Catálogo de Produtos":
                 try:
                     conn_pg = st.connection("banco_erp", type="sql")
                     
-                    query_90d = f'SELECT loja, codigo, qtde FROM "{nome_view}"'
+                    # Usa SELECT * para ignorar o nome exato da coluna lá no banco (caso tenha ficado com maiúscula, etc)
+                    query_90d = f'SELECT * FROM "{nome_view}"'
                     df_nova_media = conn_pg.query(query_90d, ttl=0) # Força rodar na hora
+                    
+                    # Padroniza as colunas no Pandas para garantir que a leitura no Sheets funcione perfeitamente
+                    df_nova_media = df_nova_media.iloc[:, :3] # Garante que vai pegar só as 3 primeiras colunas
+                    df_nova_media.columns = ['loja', 'codigo', 'qtde'] # Força o nome das colunas a ficarem certas
                     
                     # Salva no Sheets usando a aba FLV_90d
                     conn.update(worksheet="FLV_90d", data=df_nova_media)
