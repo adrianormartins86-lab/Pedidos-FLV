@@ -466,7 +466,7 @@ def carregar_banco():
     
     # Aba de Médias Dinâmica
     try:
-        df_media_90 = conn.read(worksheet="Normal_90d")
+        df_media_90 = conn.read(worksheet="FLV_90d")
         if df_media_90.empty:
             df_media_90 = pd.DataFrame(columns=["loja", "codigo", "qtde"])
     except Exception:
@@ -1277,8 +1277,8 @@ elif perfil_navegacao == "Catálogo de Produtos":
                     query_90d = f'SELECT loja, codigo, qtde FROM "{nome_view}"'
                     df_nova_media = conn_pg.query(query_90d, ttl=0) # Força rodar na hora
                     
-                    # Salva no Sheets usando a nova aba Normal_90d
-                    conn.update(worksheet="Normal_90d", data=df_nova_media)
+                    # Salva no Sheets usando a aba FLV_90d
+                    conn.update(worksheet="FLV_90d", data=df_nova_media)
                     st.cache_data.clear() # Limpa cache pro sistema puxar da planilha
                     
                     st.success(f"✅ Média de 90 dias atualizada usando a view '{nome_view}' e salva no Google Sheets com sucesso!")
