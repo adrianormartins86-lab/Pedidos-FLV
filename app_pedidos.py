@@ -463,26 +463,33 @@ def carregar_banco():
 
     mudou_algo = False
     
-    # Normalização robusta de nomes de colunas
+    # NORMALIZAÇÃO BLINDADA: Tira espaços e força os nomes padrões, independente de como o usuário digitou no Sheets
     df_prod.columns = df_prod.columns.astype(str).str.strip()
     df_ped.columns = df_ped.columns.astype(str).str.strip()
     
-    renames_prod = {}
+    renomear_prod = {}
     for c in df_prod.columns:
         cl = c.lower()
-        if cl in ["prime", "cód.prime", "cod.prime", "cód prime", "cod prime"]:
-            renames_prod[c] = "Cód.Prime"
-        elif cl in ["código", "codigo", "cod", "cód", "cód.", "cod.", "cód. iceasa", "cod.iceasa"]:
-            renames_prod[c] = "Código"
-    df_prod = df_prod.rename(columns=renames_prod)
-            
-    renames_ped = {}
+        if "prime" in cl:
+            renomear_prod[c] = "Cód.Prime"
+        elif cl in ["código", "codigo", "cod", "cód", "cod.", "cód.", "cód. iceasa", "cod. iceasa", "cod.iceasa", "cód.interno", "cod.interno", "cód. interno"]:
+            renomear_prod[c] = "Código"
+    df_prod = df_prod.rename(columns=renomear_prod)
+
+    renomear_ped = {}
     for c in df_ped.columns:
         cl = c.lower()
-        if cl in ["código", "codigo", "cod", "cód", "cód.", "cod.", "cód. iceasa", "cod.iceasa"]:
-            renames_ped[c] = "Código"
-    df_ped = df_ped.rename(columns=renames_ped)
+        if cl in ["código", "codigo", "cod", "cód", "cod.", "cód.", "cód. iceasa", "cod. iceasa", "cod.iceasa", "cód.interno", "cod.interno", "cód. interno"]:
+            renomear_ped[c] = "Código"
+    df_ped = df_ped.rename(columns=renomear_ped)
 
+    # Força Bruta: Se ainda não achar o Código, a primeira coluna de "Pedidos" é sempre o código.
+    if not df_ped.empty and len(df_ped.columns) > 0 and "Código" not in df_ped.columns:
+        cols = list(df_ped.columns)
+        cols[0] = "Código"
+        df_ped.columns = cols
+
+    # Garante estrutura básica de Produtos
     if df_prod.empty or "Código" not in df_prod.columns:
         df_prod = pd.DataFrame(produtos_iniciais)
         for loja in LOJAS: df_prod[loja] = True
@@ -493,6 +500,7 @@ def carregar_banco():
         df_prod.insert(0, "Cód.Prime", None)
         mudou_algo = True
 
+    # Garante estrutura básica de Pedidos
     if df_ped.empty or "Código" not in df_ped.columns:
         df_ped = pd.DataFrame(columns=["Código"] + LOJAS + ["R$Preço", "OBS:"])
         df_ped["Código"] = df_prod["Código"]
@@ -502,6 +510,7 @@ def carregar_banco():
         conn.update(worksheet="Pedidos", data=df_ped)
         mudou_algo = True
 
+    # Adiciona produtos novos nos Pedidos
     novos_ped = df_prod[~df_prod["Código"].isin(df_ped["Código"])]["Código"]
     if not novos_ped.empty:
         df_n_ped = pd.DataFrame({"Código": novos_ped})
@@ -512,14 +521,12 @@ def carregar_banco():
         conn.update(worksheet="Pedidos", data=df_ped)
         mudou_algo = True
 
+    # Converte os tipos de dados
     for loja in LOJAS:
-        if loja in df_ped.columns: 
-            df_ped[loja] = pd.to_numeric(df_ped[loja], errors='coerce').fillna(0).astype(int)
-        else: 
-            df_ped[loja] = 0
-            
-        if loja in df_prod.columns: 
-            df_prod[loja] = df_prod[loja].fillna(False).astype(bool)
+        if loja in df_ped.columns: df_ped[loja] = pd.to_numeric(df_ped[loja], errors='coerce').fillna(0).astype(int)
+        else: df_ped[loja] = 0
+        
+        if loja in df_prod.columns: df_prod[loja] = df_prod[loja].fillna(False).astype(bool)
 
     if "R$Preço" in df_ped.columns: df_ped["R$Preço"] = pd.to_numeric(df_ped["R$Preço"], errors='coerce').fillna(0.0)
     if "OBS:" in df_ped.columns: df_ped["OBS:"] = df_ped["OBS:"].fillna("").astype(str)
@@ -1003,6 +1010,11 @@ elif perfil_navegacao == "Visão das Lojas":
     # -----------------------------------------------------------------
 
     df_loja["Estoque"] = df_loja["Estoque"].fillna(0).astype(int)
+    
+    # Proteção caso df_pedidos perca a coluna Código ou venha zuado na hora do merge
+    if "Código" not in df_pedidos.columns and len(df_pedidos.columns) > 0:
+        df_pedidos = df_pedidos.rename(columns={df_pedidos.columns[0]: "Código"})
+        
     df_qtd = df_pedidos[["Código", loja_selecionada]].rename(columns={loja_selecionada: "Qtde"})
     df_loja = pd.merge(df_loja, df_qtd, on="Código", how="left")
     
@@ -1148,7 +1160,7 @@ elif perfil_navegacao == "Visão Fornecedores (Ademilto)":
                             use_container_width=True, 
                             column_config=col_configs_especial,
                             height=altura_esp,
-                            num_rows="fixed",
+                            num_rows="fixed", # Remove a coluna vazia de seleção/índice
                             key=f"forn_esp_{fornecedor}_{st.session_state['reset_counter']}"
                         )
                     
@@ -1175,7 +1187,7 @@ elif perfil_navegacao == "Visão Fornecedores (Ademilto)":
                             use_container_width=True, 
                             column_config=col_cfg_forn,
                             height=altura_dinamica,
-                            num_rows="fixed",
+                            num_rows="fixed", # Remove a coluna vazia de seleção/índice
                             key=f"forn_{fornecedor}_{st.session_state['reset_counter']}"
                         )
                         
