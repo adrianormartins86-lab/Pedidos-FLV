@@ -172,7 +172,6 @@ div[data-testid="stVerticalBlockBorderWrapper"]:hover {
         display: none !important; 
     }
     
-    /* DESLIGA TUDO O QUE FOR DO STREAMLIT NA TELA */
     [data-testid="stElementContainer"],
     [data-testid="stHorizontalBlock"],
     div[data-testid="stVerticalBlockBorderWrapper"],
@@ -181,13 +180,11 @@ div[data-testid="stVerticalBlockBorderWrapper"]:hover {
         display: none !important;
     }
     
-    /* RELIGA APENAS A CAIXA QUE CONTÉM O PRINT-SECTION */
     [data-testid="stElementContainer"]:has(#print-section) {
         display: block !important;
         width: 100% !important;
     }
     
-    /* FORMATAÇÃO DO PAPEL */
     #print-section {
         display: block !important;
         width: 100% !important;
@@ -211,7 +208,6 @@ div[data-testid="stVerticalBlockBorderWrapper"]:hover {
         gap: 10px !important; 
     }
     
-    /* FORÇANDO A LARGURA EXATA DAS TABELAS PARA NÃO ENCOLHER */
     .print-col {
         width: 49% !important; 
         flex: 0 0 49% !important;
@@ -475,7 +471,6 @@ def carregar_banco():
         conn.update(worksheet="Produtos", data=df_prod)
         mudou_algo = True
         
-    # Garante que as colunas corretas existem em Produtos
     if "Cód.Prime" not in df_prod.columns:
         df_prod.insert(0, "Cód.Prime", None)
         mudou_algo = True
@@ -692,25 +687,28 @@ def _gerar_excel_formatado(df_editado_admin, filtro_setor):
     brd  = Border(left=thin, right=thin, top=thin, bottom=thin)
 
     df_exp = df_editado_admin.copy()
+    
+    # Remove Cód.Prime do Excel para manter o padrão antigo exato
+    df_exp = df_exp.drop(columns=["Cód.Prime"], errors="ignore")
     df_exp = df_exp.rename(columns=MAPA_LOJAS)
 
     if filtro_setor in ("Box", "Pedra"):
         df_exp = df_exp.rename(columns={
-            "Cód.Prime":   "COD.PRIME",
             "Código":      "COD.ICEASA",
             "Descrição":   "PRODUTOS MOLICENTER",
             "TOTAL GERAL": "TOTAL",
             "R$Preço":     "PREÇO",
         })
+    else:
+        df_exp = df_exp.rename(columns={"Código": "Cód. Iceasa"})
 
-    cod_prime_col = "COD.PRIME" if filtro_setor in ("Box", "Pedra") else "Cód.Prime"
-    cod_col       = "COD.ICEASA" if filtro_setor in ("Box", "Pedra") else "Código"
+    cod_col       = "COD.ICEASA" if filtro_setor in ("Box", "Pedra") else "Cód. Iceasa"
     prod_col      = "PRODUTOS MOLICENTER" if filtro_setor in ("Box", "Pedra") else "Descrição"
     tot_col       = "TOTAL"        if filtro_setor in ("Box", "Pedra") else "TOTAL GERAL"
     pre_col       = "PREÇO"        if filtro_setor in ("Box", "Pedra") else "R$Preço"
     obs_col       = "OBS:"
 
-    base_cols = [cod_prime_col, cod_col, prod_col]
+    base_cols = [cod_col, prod_col]
     if "Tipo" in df_exp.columns:
         base_cols.append("Tipo")
 
@@ -760,7 +758,6 @@ def _gerar_excel_formatado(df_editado_admin, filtro_setor):
                 cell.alignment = Alignment(horizontal="center", vertical="center")
 
             if col_name == tot_col:
-                # Ajusta o index do SUM no excel baseando na quantidade de base_cols
                 idx_ini = get_column_letter(len(base_cols) + 1)
                 idx_fim = get_column_letter(len(base_cols) + len(store_cols))
                 cell.value = f'=IF(SUM({idx_ini}{ri}:{idx_fim}{ri})=0,"",SUM({idx_ini}{ri}:{idx_fim}{ri}))'
@@ -773,9 +770,7 @@ def _gerar_excel_formatado(df_editado_admin, filtro_setor):
                     cell.number_format = '[$R$-pt-BR] #,##0.00'
             
             else:
-                # Regra de cores apenas para lojas (depois de base_cols)
                 if ci > len(base_cols) and ci <= len(base_cols) + len(store_cols):
-                    # Intercala cor na loja
                     col_bg = GREEN_ROW if ci % 2 != 0 else WHITE_ROW
                 else:
                     col_bg = WHITE_ROW  
@@ -784,7 +779,6 @@ def _gerar_excel_formatado(df_editado_admin, filtro_setor):
 
     # ── Larguras das colunas ────────────────────────────────────────────────
     widths = {
-        cod_prime_col: 9,
         cod_col:       9,
         prod_col:      34,
         "Tipo":        8,
@@ -877,6 +871,20 @@ if perfil_navegacao == "Separação e Fechamento":
             height=580, column_config=col_cfg,
             key=f"admin_editor_{st.session_state['reset_counter']}"
         )
+        
+        # Oculta o Cód.Prime na hora da impressão para manter o padrão antigo
+        df_imprimir = df_editado_admin.copy()
+        df_imprimir = df_imprimir.drop(columns=["Cód.Prime"], errors="ignore")
+        df_imprimir = df_imprimir.rename(columns={"Código": "Cód. Iceasa"})
+        html_table = df_imprimir.to_html(index=False, classes=["print-table", "print-sep"])
+        st.markdown(f"""<div id="print-section">
+            <h2 style="color: black; margin-bottom: 10px; text-align: center; border-bottom: 2px solid black; padding-bottom: 5px;">
+                Resumo de Separação — FLV Normal
+            </h2>
+            <div class="print-container">
+                {html_table}
+            </div>
+        </div>""", unsafe_allow_html=True)
 
         st.divider()
         col_salvar, col_csv, col_excel, col_limpa, _ = st.columns([2.5, 1.5, 1.5, 2, 2.5])
@@ -898,6 +906,7 @@ if perfil_navegacao == "Separação e Fechamento":
 
         with col_csv:
             df_csv = df_editado_admin.copy()
+            df_csv = df_csv.drop(columns=["Cód.Prime"], errors="ignore")
             df_csv = df_csv.rename(columns=MAPA_LOJAS)
             csv = df_csv.to_csv(index=False).encode("utf-8")
             st.download_button("⬇️ CSV", data=csv, file_name="separacao_semanal.csv", mime="text/csv", use_container_width=True)
@@ -947,7 +956,7 @@ elif perfil_navegacao == "Visão das Lojas":
             st.rerun()
 
     df_visiveis = df_produtos[df_produtos[loja_selecionada] == True]
-    df_loja = df_visiveis[["Cód.Prime", "Código","Descrição","Tipo"]].copy()
+    df_loja = df_visiveis[["Cód.Prime", "Código", "Descrição", "Tipo"]].copy()
     
     # ------------------ ESTOQUE VIA POSTGRESQL ----------------------
     try:
@@ -994,8 +1003,8 @@ elif perfil_navegacao == "Visão das Lojas":
 
     with st.container(border=True):
         col_cfg_loja = {
+            "Código":         None, # Esconde o Cód.Iceasa da visão da loja
             "Cód.Prime":      st.column_config.NumberColumn("Cód. Prime", width=70, format="%d", disabled=True),
-            "Código":         st.column_config.NumberColumn("Cód. Iceasa", width=85, format="%d", disabled=True),
             "Descrição":      st.column_config.TextColumn(width=400, disabled=True),
             "Tipo":           st.column_config.TextColumn("Setor", width=80, disabled=True),
             "Estoque":        st.column_config.NumberColumn("📦 Estoque", width=100, disabled=True),
@@ -1008,10 +1017,12 @@ elif perfil_navegacao == "Visão das Lojas":
             key=f"loja_editor_{st.session_state['reset_counter']}"
         )
 
+        # Montagem do HTML para impressão (restaurando o Cód.Iceasa para manter o padrão antigo)
         df_imprimir = df_editado.copy()
-        df_imprimir["Cód.Prime"] = df_imprimir["Cód.Prime"].fillna("").astype(str)
+        df_imprimir = df_imprimir.drop(columns=["Cód.Prime"], errors="ignore")
         df_imprimir["Código"] = df_imprimir["Código"].fillna(0).astype(int).astype(str)
-        df_imprimir = df_imprimir.rename(columns={"Tipo": "Setor", "Estoque": "Est.", "Qtde": "Ped."})
+        df_imprimir = df_imprimir.rename(columns={"Código": "Cód", "Tipo": "Setor", "Estoque": "Est.", "Qtde": "Ped."})
+        df_imprimir = df_imprimir[["Cód", "Descrição", "Setor", "Est.", "Ped."]] # Força a ordem exata de antes
         
         meio = (len(df_imprimir) // 2) + (len(df_imprimir) % 2)
         df1 = df_imprimir.iloc[:meio]
@@ -1080,7 +1091,7 @@ elif perfil_navegacao == "Visão Fornecedores (Ademilto)":
         <span style="font-size: 26px; margin-right: 12px;">🚚</span>
         <div style="display: inline-block; vertical-align: top;">
             <div style="font-size: 20px; font-weight: 700; color: var(--text-header);">Visão Fornecedores (Ademilto) - Modo de Edição Livre</div>
-            <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Altere nomes, códigos e totais livremente antes de gerar seu print. Adicione ou remova linhas na própria tabela.</div>
+            <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Altere nomes, códigos e totais livremente antes de gerar seu print. Edite os campos diretamente na tabela.</div>
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -1135,7 +1146,7 @@ elif perfil_navegacao == "Visão Fornecedores (Ademilto)":
                             use_container_width=True, 
                             column_config=col_configs_especial,
                             height=altura_esp,
-                            num_rows="dynamic",
+                            num_rows="fixed", # Remove a coluna vazia de seleção/índice
                             key=f"forn_esp_{fornecedor}_{st.session_state['reset_counter']}"
                         )
                     
@@ -1162,7 +1173,7 @@ elif perfil_navegacao == "Visão Fornecedores (Ademilto)":
                             use_container_width=True, 
                             column_config=col_cfg_forn,
                             height=altura_dinamica,
-                            num_rows="dynamic",
+                            num_rows="fixed", # Remove a coluna vazia de seleção/índice
                             key=f"forn_{fornecedor}_{st.session_state['reset_counter']}"
                         )
                         
