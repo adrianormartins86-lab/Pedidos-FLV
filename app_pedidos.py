@@ -261,6 +261,7 @@ NOVOS_NOMES_LOJAS = ["291", "292", "293", "294", "295", "296", "297", "298"]
 MAPA_LOJAS = dict(zip(LOJAS, NOVOS_NOMES_LOJAS))
 FORNECEDORES_ESPECIAIS_LINHA = ["BANANA SANTOME", "MELANCIA CARLIN", "MELANCIA MARCINHO", "RODRIGO BATATA"]
 
+# O "Código" aqui no dicionário original representa o Cód.Iceasa
 produtos_iniciais = [
     {"Cód.Prime": None, "Código": 1571, "Descrição": "Abacate Cx 20 Kg", "Tipo": "Box"},
     {"Cód.Prime": None, "Código": 2614, "Descrição": "Abacaxi Doce Mel Cx c/7", "Tipo": "Box"},
@@ -460,7 +461,6 @@ conn = st.connection("gsheets", type=GSheetsConnection)
 def carregar_banco():
     df_prod = conn.read(worksheet="Produtos")
     df_ped = conn.read(worksheet="Pedidos")
-    df_est = conn.read(worksheet="Estoque")
 
     mudou_algo = False
     
@@ -489,13 +489,6 @@ def carregar_banco():
         conn.update(worksheet="Pedidos", data=df_ped)
         mudou_algo = True
 
-    if df_est.empty or "Código" not in df_est.columns:
-        df_est = pd.DataFrame(columns=["Código"] + LOJAS)
-        df_est["Código"] = df_prod["Código"]
-        df_est[LOJAS] = 0
-        conn.update(worksheet="Estoque", data=df_est)
-        mudou_algo = True
-
     novos_ped = df_prod[~df_prod["Código"].isin(df_ped["Código"])]["Código"]
     if not novos_ped.empty:
         df_n_ped = pd.DataFrame({"Código": novos_ped})
@@ -506,17 +499,8 @@ def carregar_banco():
         conn.update(worksheet="Pedidos", data=df_ped)
         mudou_algo = True
 
-    novos_est = df_prod[~df_prod["Código"].isin(df_est["Código"])]["Código"]
-    if not novos_est.empty:
-        df_n_est = pd.DataFrame({"Código": novos_est})
-        df_n_est[LOJAS] = 0
-        df_est = pd.concat([df_est, df_n_est], ignore_index=True)
-        conn.update(worksheet="Estoque", data=df_est)
-        mudou_algo = True
-
     for loja in LOJAS:
         if loja in df_ped.columns: df_ped[loja] = pd.to_numeric(df_ped[loja], errors='coerce').fillna(0).astype(int)
-        if loja in df_est.columns: df_est[loja] = pd.to_numeric(df_est[loja], errors='coerce').fillna(0).astype(int)
         if loja in df_prod.columns: df_prod[loja] = df_prod[loja].fillna(False).astype(bool)
 
     if "R$Preço" in df_ped.columns: df_ped["R$Preço"] = pd.to_numeric(df_ped["R$Preço"], errors='coerce').fillna(0.0)
@@ -526,9 +510,9 @@ def carregar_banco():
     if mudou_algo:
         st.cache_data.clear()
 
-    return df_prod, df_ped, df_est
+    return df_prod, df_ped
 
-df_produtos, df_pedidos, df_estoque = carregar_banco()
+df_produtos, df_pedidos = carregar_banco()
 
 LISTA_NOMES_PRODUTOS = [str(x) for x in df_produtos['Descrição'].unique()]
 
@@ -620,8 +604,8 @@ if not acesso_total:
 # MODAL ZERAR TUDO
 # ─────────────────────────────────────────────
 @st.dialog("🚨 Confirmação Necessária")
-def modal_zerar_estoque_pedidos():
-    st.markdown("Tem certeza que deseja **zerar todos os pedidos e o estoque** de todas as lojas?")
+def modal_zerar_pedidos():
+    st.markdown("Tem certeza que deseja **zerar todos os pedidos** de todas as lojas?")
     st.markdown("⚠️ *Esta ação limpará também os preços e observações direto no Google Sheets e não poderá ser desfeita.*")
     
     st.write("<br>", unsafe_allow_html=True)
@@ -632,15 +616,13 @@ def modal_zerar_estoque_pedidos():
     with c2:
         if st.button("✔️ Sim, zerar tudo", type="primary", use_container_width=True):
             st.session_state['reset_counter'] += 1
-            df_prod, df_ped, df_est = carregar_banco()
+            _, df_ped = carregar_banco()
             
             df_ped[LOJAS] = 0
             df_ped["R$Preço"] = 0.0
             df_ped["OBS:"] = ""
-            df_est[LOJAS] = 0
             
             conn.update(worksheet="Pedidos", data=df_ped)
-            conn.update(worksheet="Estoque", data=df_est)
             st.cache_data.clear()
             st.rerun()
 
@@ -896,7 +878,7 @@ if perfil_navegacao == "Separação e Fechamento":
 
         with col_salvar:
             if st.button("💾 Salvar Alterações", type="primary", use_container_width=True):
-                _, df_ped_fresco, _ = carregar_banco()
+                _, df_ped_fresco = carregar_banco()
                 for _, row in df_editado_admin.iterrows():
                     mask = df_ped_fresco["Código"] == row["Código"]
                     for loja in LOJAS:
@@ -928,8 +910,8 @@ if perfil_navegacao == "Separação e Fechamento":
             )
 
         with col_limpa:
-            if st.button("🚨 Zerar Pedidos/Estoque", use_container_width=True):
-                modal_zerar_estoque_pedidos()
+            if st.button("🚨 Zerar Pedidos", use_container_width=True):
+                modal_zerar_pedidos()
 
 # ─────────────────────────────────────────────
 # ROTA 2: VISÃO DAS LOJAS
@@ -1066,12 +1048,7 @@ elif perfil_navegacao == "Visão das Lojas":
             if st.button("🖨️ Imprimir", use_container_width=True):
                 components.html(
                     "<script>"
-                    "var s=document.createElement('style');"
-                    "s.id='__loja_print__';"
-                    "s.innerHTML='@media print { @page { size: landscape; margin: 5mm; } html,body,.stApp,#root,[data-testid=\"stAppViewContainer\"],[data-testid=\"stMainBlockContainer\"],.main,.block-container { padding: 0 !important; margin: 0 !important; } }';"
-                    "window.parent.document.head.appendChild(s);"
                     "window.parent.print();"
-                    "setTimeout(function(){var e=window.parent.document.getElementById('__loja_print__');if(e)e.remove();},3000);"
                     "</script>", 
                     height=0
                 )
@@ -1079,7 +1056,7 @@ elif perfil_navegacao == "Visão das Lojas":
         with col_btn:
             st.write("<br>", unsafe_allow_html=True)
             if st.button("💾 Salvar Pedido da Semana", type="primary", use_container_width=True):
-                _, df_ped_fresco, _ = carregar_banco()
+                _, df_ped_fresco = carregar_banco()
                 
                 for _, row in df_editado.iterrows():
                     mask_ped = df_ped_fresco["Código"] == row["Código"]
