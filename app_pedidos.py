@@ -152,11 +152,11 @@ div[data-testid="stVerticalBlockBorderWrapper"]:hover {
 .topbar-title { font-size: 18px; font-weight: 700; color: var(--text-header); }
 .topbar-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
 
-/* REGRAS DE IMPRESSÃO */
+/* REGRAS DE IMPRESSÃO GLOBAIS - FORÇANDO PAISAGEM (LANDSCAPE) */
 @media print {
     @page { 
         margin: 5mm 5mm; 
-        size: A4 portrait; 
+        size: landscape; 
     }
     .stApp, .main, body, html {
         background-color: #ffffff !important;
@@ -234,8 +234,8 @@ div[data-testid="stVerticalBlockBorderWrapper"]:hover {
         white-space: nowrap !important; 
     }
     
-    table.print-table th:nth-child(1), table.print-table td:nth-child(1) { width: 12% !important; } /* Cód */
-    table.print-table th:nth-child(2), table.print-table td:nth-child(2) { width: 52% !important; } /* Descrição */
+    table.print-table th:nth-child(1), table.print-table td:nth-child(1) { width: 10% !important; } /* Cód */
+    table.print-table th:nth-child(2), table.print-table td:nth-child(2) { width: 54% !important; } /* Descrição */
     table.print-table th:nth-child(3), table.print-table td:nth-child(3) { width: 12% !important; } /* Setor */
     table.print-table th:nth-child(4), table.print-table td:nth-child(4) { width: 12% !important; } /* Est. */
     table.print-table th:nth-child(5), table.print-table td:nth-child(5) { width: 12% !important; text-align: center !important;} /* Ped. */
@@ -452,7 +452,7 @@ mapa_inicial_codigos = {
 }
 
 # ─────────────────────────────────────────────
-# CONEXÃO GOOGLE SHEETS & FUNÇÕES DE DADOS
+# CONEXÃO GOOGLE SHEETS & FUNÇÕES DE DADOS (BLINDADO)
 # ─────────────────────────────────────────────
 conn = st.connection("gsheets", type=GSheetsConnection)
 
@@ -463,74 +463,83 @@ def carregar_banco():
 
     mudou_algo = False
     
-    # NORMALIZAÇÃO BLINDADA: Tira espaços e força os nomes padrões, independente de como o usuário digitou no Sheets
+    # NORMALIZAÇÃO BLINDADA: Tira espaços e força os nomes padrões (evita o KeyError)
     df_prod.columns = df_prod.columns.astype(str).str.strip()
     df_ped.columns = df_ped.columns.astype(str).str.strip()
     
     renomear_prod = {}
     for c in df_prod.columns:
         cl = c.lower()
-        if "prime" in cl:
+        if "prime" in cl: 
             renomear_prod[c] = "Cód.Prime"
-        elif cl in ["código", "codigo", "cod", "cód", "cod.", "cód.", "cód. iceasa", "cod. iceasa", "cod.iceasa", "cód.interno", "cod.interno", "cód. interno"]:
+        elif cl in ["código", "codigo", "cod", "cód", "cod.", "cód.", "cód. iceasa", "cód.interno"]: 
             renomear_prod[c] = "Código"
+        elif cl in ["descrição", "descricao", "desc"]: 
+            renomear_prod[c] = "Descrição"
+        elif cl in ["tipo", "setor"]: 
+            renomear_prod[c] = "Tipo"
     df_prod = df_prod.rename(columns=renomear_prod)
 
     renomear_ped = {}
     for c in df_ped.columns:
         cl = c.lower()
-        if cl in ["código", "codigo", "cod", "cód", "cod.", "cód.", "cód. iceasa", "cod. iceasa", "cod.iceasa", "cód.interno", "cod.interno", "cód. interno"]:
+        if cl in ["código", "codigo", "cod", "cód", "cod.", "cód.", "cód. iceasa", "cód.interno"]: 
             renomear_ped[c] = "Código"
+        elif cl in ["r$preço", "r$ preço", "preço", "preco"]: 
+            renomear_ped[c] = "R$Preço"
+        elif cl in ["obs:", "obs", "observacao", "observação"]: 
+            renomear_ped[c] = "OBS:"
     df_ped = df_ped.rename(columns=renomear_ped)
 
-    # Força Bruta: Se ainda não achar o Código, a primeira coluna de "Pedidos" é sempre o código.
-    if not df_ped.empty and len(df_ped.columns) > 0 and "Código" not in df_ped.columns:
-        cols = list(df_ped.columns)
-        cols[0] = "Código"
-        df_ped.columns = cols
-
     # Garante estrutura básica de Produtos
-    if df_prod.empty or "Código" not in df_prod.columns:
+    for col in ["Cód.Prime", "Código", "Descrição", "Tipo"]:
+        if col not in df_prod.columns:
+            df_prod[col] = None if col == "Cód.Prime" else ""
+            mudou_algo = True
+            
+    if df_prod.empty:
         df_prod = pd.DataFrame(produtos_iniciais)
         for loja in LOJAS: df_prod[loja] = True
         conn.update(worksheet="Produtos", data=df_prod)
         mudou_algo = True
-        
-    if "Cód.Prime" not in df_prod.columns:
-        df_prod.insert(0, "Cód.Prime", None)
-        mudou_algo = True
 
     # Garante estrutura básica de Pedidos
-    if df_ped.empty or "Código" not in df_ped.columns:
-        df_ped = pd.DataFrame(columns=["Código"] + LOJAS + ["R$Preço", "OBS:"])
+    for col in ["Código", "R$Preço", "OBS:"] + LOJAS:
+        if col not in df_ped.columns:
+            if col == "R$Preço": df_ped[col] = 0.0
+            elif col == "OBS:": df_ped[col] = ""
+            else: df_ped[col] = 0
+            mudou_algo = True
+            
+    if df_ped.empty:
         df_ped["Código"] = df_prod["Código"]
-        df_ped[LOJAS] = 0
-        df_ped["R$Preço"] = 0.0
-        df_ped["OBS:"] = ""
         conn.update(worksheet="Pedidos", data=df_ped)
         mudou_algo = True
+
+    # Remove Cód.Prime do Pedidos se o usuário criou lá no Sheets sem querer
+    for drop_col in ["Cód.Prime", "Prime"]:
+        if drop_col in df_ped.columns:
+            df_ped = df_ped.drop(columns=[drop_col])
 
     # Adiciona produtos novos nos Pedidos
     novos_ped = df_prod[~df_prod["Código"].isin(df_ped["Código"])]["Código"]
     if not novos_ped.empty:
         df_n_ped = pd.DataFrame({"Código": novos_ped})
-        df_n_ped[LOJAS] = 0
+        for col in LOJAS: df_n_ped[col] = 0
         df_n_ped["R$Preço"] = 0.0
         df_n_ped["OBS:"] = ""
         df_ped = pd.concat([df_ped, df_n_ped], ignore_index=True)
         conn.update(worksheet="Pedidos", data=df_ped)
         mudou_algo = True
 
-    # Converte os tipos de dados
+    # Converte os tipos de dados para evitar bugs no processamento
     for loja in LOJAS:
-        if loja in df_ped.columns: df_ped[loja] = pd.to_numeric(df_ped[loja], errors='coerce').fillna(0).astype(int)
-        else: df_ped[loja] = 0
-        
-        if loja in df_prod.columns: df_prod[loja] = df_prod[loja].fillna(False).astype(bool)
+        df_ped[loja] = pd.to_numeric(df_ped[loja], errors='coerce').fillna(0).astype(int)
+        df_prod[loja] = df_prod[loja].fillna(False).astype(bool)
 
-    if "R$Preço" in df_ped.columns: df_ped["R$Preço"] = pd.to_numeric(df_ped["R$Preço"], errors='coerce').fillna(0.0)
-    if "OBS:" in df_ped.columns: df_ped["OBS:"] = df_ped["OBS:"].fillna("").astype(str)
-    if "Cód.Prime" in df_prod.columns: df_prod["Cód.Prime"] = pd.to_numeric(df_prod["Cód.Prime"], errors='coerce').fillna(0).astype(int)
+    df_ped["R$Preço"] = pd.to_numeric(df_ped["R$Preço"], errors='coerce').fillna(0.0)
+    df_ped["OBS:"] = df_ped["OBS:"].fillna("").astype(str)
+    df_prod["Cód.Prime"] = pd.to_numeric(df_prod["Cód.Prime"], errors='coerce').fillna(0).astype(int)
 
     if mudou_algo:
         st.cache_data.clear()
@@ -853,6 +862,7 @@ if perfil_navegacao == "Separação e Fechamento":
         df_base  = df_produtos[["Cód.Prime", "Código","Descrição","Tipo"]]
         df_final = pd.merge(df_base, df_pedidos, on="Código")
         df_final["TOTAL GERAL"] = df_final[LOJAS].sum(axis=1)
+        
         cols_order = ["Cód.Prime", "Código", "Descrição", "Tipo"] + LOJAS + ["TOTAL GERAL", "R$Preço", "OBS:"]
         df_final = df_final[cols_order]
 
@@ -1011,7 +1021,7 @@ elif perfil_navegacao == "Visão das Lojas":
 
     df_loja["Estoque"] = df_loja["Estoque"].fillna(0).astype(int)
     
-    # Proteção caso df_pedidos perca a coluna Código ou venha zuado na hora do merge
+    # Proteção caso df_pedidos perca a coluna Código
     if "Código" not in df_pedidos.columns and len(df_pedidos.columns) > 0:
         df_pedidos = df_pedidos.rename(columns={df_pedidos.columns[0]: "Código"})
         
